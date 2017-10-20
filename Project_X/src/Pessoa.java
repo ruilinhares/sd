@@ -1,5 +1,3 @@
-package Classes;
-
 import java.util.ArrayList;
 
 public abstract class Pessoa {
@@ -62,6 +60,8 @@ public abstract class Pessoa {
 
     //remover eleitor da lista de eleitores quando para não poder voltar a votar na geral
     public abstract void removerEleitorGeral(DirecaoGeral dg, Voto voto);
+
+    public abstract void AddEleitorGeral(DirecaoGeral dg);
 
     public abstract ArrayList<ListaCandidata> getListaCandidataGeral(DirecaoGeral dg);
 }

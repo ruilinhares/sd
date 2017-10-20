@@ -1,5 +1,3 @@
-package Classes;
-
 import java.io.Serializable;
 import java.util.*;
 
@@ -21,7 +19,7 @@ public class Departamento implements Serializable{
     }
 
     public ArrayList<Estudante> getListaEstudantes() {
-        return this.ListaEstudantes;
+        return ListaEstudantes;
     }
 
     public void setListaEstudantes(ArrayList<Estudante> listaEstudantes) {

@@ -1,5 +1,3 @@
-package Classes;
-
 import java.util.ArrayList;
 
 public class Estudante extends Pessoa{
@@ -21,6 +19,11 @@ public class Estudante extends Pessoa{
     @Override
     public void removerEleitorGeral(DirecaoGeral dg, Voto voto) {
         dg.removeEleitorEstudante(voto);
+    }
+
+    @Override
+    public void AddEleitorGeral(DirecaoGeral dg) {
+        dg.AddEstudante(this);
     }
 
     @Override
