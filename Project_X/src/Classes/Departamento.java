@@ -1,3 +1,5 @@
+package Classes;
+
 import java.io.Serializable;
 import java.util.*;
 
@@ -18,15 +20,15 @@ public class Departamento implements Serializable{
         this.nome = nome;
     }
 
-    public ArrayList<Estudante> getListaEstudantes() {
-        return ListaEstudantes;
+    ArrayList<Estudante> getListaEstudantes() {
+        return this.ListaEstudantes;
     }
 
     public void setListaEstudantes(ArrayList<Estudante> listaEstudantes) {
         ListaEstudantes = listaEstudantes;
     }
 
-    public void addEstudante(Estudante estudante) {
+    void addEstudante(Estudante estudante) {
         ListaEstudantes.add(estudante);
     }
 }
