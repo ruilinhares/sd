@@ -1,8 +1,9 @@
 package Classes;
 
+import java.io.Serializable;
 import java.util.*;
 
-public abstract class Eleicao {
+public abstract class Eleicao implements Serializable {
     String Titulo;
     String Descricao;
     Calendar inicio;

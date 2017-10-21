@@ -1,8 +1,9 @@
 package Classes;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Docente extends Pessoa{
+public class Docente extends Pessoa implements Serializable {
 
     public Docente(String nome, String numero, String telemovel, String morada, String password, Departamento departamento, String numeroCC, String validade) {
         super(nome, numero, telemovel, morada, password, departamento, numeroCC, validade);

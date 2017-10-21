@@ -1,11 +1,12 @@
 package Classes;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Scanner;
 
-public class DirecaoGeral extends Eleicao{
+public class DirecaoGeral extends Eleicao implements Serializable {
     private ArrayList<Voto> listaVotosEstudantes;
     private ArrayList<Voto> listaVotosDocentes;
     private ArrayList<Voto> listaVotosFuncionarios;

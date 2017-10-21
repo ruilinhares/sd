@@ -1,9 +1,10 @@
 package Classes;
 
+import java.io.Serializable;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-public class Voto {
+public class Voto implements Serializable {
     private Pessoa eleitor;
     private ListaCandidata tipoVoto;
     private Calendar horaDeVoto;

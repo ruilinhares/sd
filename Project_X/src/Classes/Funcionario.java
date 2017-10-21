@@ -1,8 +1,9 @@
 package Classes;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Funcionario extends Pessoa {
+public class Funcionario extends Pessoa implements Serializable {
     public Funcionario(String nome, String numero, String telemovel, String morada, String password, Departamento departamento, String numeroCC, String validade) {
         super(nome, numero, telemovel, morada, password, departamento, numeroCC, validade);
     }
