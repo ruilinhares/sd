@@ -8,7 +8,6 @@ public abstract class Eleicao implements Serializable {
     String Descricao;
     Calendar inicio;
     Calendar fim;
-    // serveresTCP
 
     Eleicao(){}
 

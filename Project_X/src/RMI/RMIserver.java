@@ -1,6 +1,7 @@
 package RMI;
 
 import Classes.*;
+import TCP.TCPServer;
 
 import java.io.IOException;
 import java.net.*;
@@ -20,6 +21,7 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
     private ArrayList<Eleicao> listaEleicoes;
     private ArrayList<Departamento> listaDepartamentos;
     private ArrayList<Pessoa> listaPessoas;
+    private ArrayList<TCPServer> mesasVotos;
 
     RMIserver() throws RemoteException {
         super();
@@ -30,6 +32,11 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         this.listaEleicoes = listaEleicoes;
         this.listaDepartamentos = listaDepartamentos;
         this.listaPessoas = listaPessoas;
+        this.mesasVotos = new ArrayList<>();
+        listaDepartamentos.add(new Departamento("nei",new ArrayList<>()));
+        listaPessoas.add(new Estudante("ze1","1","1","1","123",listaDepartamentos.get(0),"123","123"));
+        listaPessoas.add(new Estudante("ze2","1","1","1","123",listaDepartamentos.get(0),"123","123"));
+        this.mesasVotos.add(new TCPServer(listaDepartamentos.get(0)));
     }
 
 
@@ -115,17 +122,55 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
 
     //-----TCPserver-client-------------------------------------
 
-    // Ponto 6 IDENTIFICAR UM ELEITOR
-    @Override
-    public Pessoa identificarEleitor(int eleicaohashcode, String numerouc) throws RemoteException{
-        for (Eleicao aux : this.listaEleicoes)
-            if (eleicaohashcode == aux.hashCode())
-                for (Pessoa pessoa: aux.getListaEleitores())
-                    if (pessoa.getNumeroUC().equals(numerouc))
-                        return pessoa;
-
+    // ABRIR MESA DE VOTO
+    public Departamento abrirMesaVoto(String dep){
+        for (TCPServer aux : mesasVotos)
+            if (dep.equals(aux.getDepartamento().getNome()) && !aux.getEstadoMesa()) {
+                aux.setEstadoMesa(true);
+                return aux.getDepartamento();
+            }
         return null;
     }
+
+    // Ponto 6 IDENTIFICAR UM ELEITOR
+    @Override
+    public Pessoa identificarEleitor(String numerocc, Departamento dep) throws RemoteException{
+        for (TCPServer mesaux : this.mesasVotos)
+            if (mesaux.getDepartamento().getNome().equals(dep.getNome()))
+                for (Eleicao aux: mesaux.getListaEleicoes())
+                    if (aux.verificaVotacao())
+                        for (Pessoa pessoa: aux.getListaEleitores())
+                            if (pessoa.getNumeroCC().equals(numerocc))
+                                return pessoa;
+        return null;
+    }
+
+    // devolver lista de Eleicoes que o eleitor pode votar
+    @Override
+    public ArrayList<Eleicao> identificarEleicoes(Pessoa eleitor, Departamento dep){
+        ArrayList<Eleicao> eleicoes = new ArrayList<>();
+        for (TCPServer mesaux : this.mesasVotos)
+            if (mesaux.getDepartamento().getNome().equals(dep.getNome()))
+                for (Eleicao aux: mesaux.getListaEleicoes())
+                    if (aux.verificaVotacao())
+                        for (Pessoa pessoa: aux.getListaEleitores())
+                            if (pessoa.getNumeroCC().equals(eleitor.getNumeroCC()))
+                                eleicoes.add(aux);
+        return eleicoes;
+    }
+
+    public int escolherEleicao(Pessoa eleitor, Departamento dep, int i){
+        int count = 0;
+        for (TCPServer mesaux : this.mesasVotos)
+            if (mesaux.getDepartamento().getNome().equals(dep.getNome()))
+                for (Eleicao aux: mesaux.getListaEleicoes())
+                    if (aux.verificaVotacao())
+                        for (Pessoa pessoa: aux.getListaEleitores())
+                            if (pessoa.getNumeroCC().equals(eleitor.getNumeroCC()) && (++count)==i)
+                                return aux.hashCode();
+        return -1;
+    }
+    // Ponto 7 AUTENTICAR ELEITOR
 
     // Ponto 8 (VALIDAR O VOTO DO ELEITOR)
     @Override

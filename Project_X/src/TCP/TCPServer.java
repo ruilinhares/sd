@@ -4,32 +4,81 @@ import RMI.TCPserverRMIimplements;
 
 import java.net.*;
 import java.io.*;
+import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.util.*;
-import java.rmi.registry.LocateRegistry;
+
+import static java.lang.System.exit;
 
 public class TCPServer{
+    private Departamento departamento;
+    private ArrayList<Eleicao> listaEleicoes;
+    private Boolean estadoMesa;
 
-    public TCPServer() {
+    public TCPServer(Departamento departamento) {
+        this.departamento = departamento;
+        this.listaEleicoes = new ArrayList<>();
+        this.estadoMesa = false;
     }
 
-    //metodo para abrir mesas de voto
+    public void setEstadoMesa(Boolean estadoMesa) {
+        this.estadoMesa = estadoMesa;
+    }
+
+    public Departamento getDepartamento() {
+        return departamento;
+    }
+
+    public ArrayList<Eleicao> getListaEleicoes() {
+        return listaEleicoes;
+    }
+
+    public Boolean getEstadoMesa() {
+        return estadoMesa;
+    }
+
+//metodo para abrir mesas de voto
+
 
     public static void main(String args[]){
         int numero=0;
         try{
-            //RMIserver h = (RMIserver) Naming.lookup("rmi://localhost:7000");
-            TCPserverRMIimplements rmi = (TCPserverRMIimplements) LocateRegistry.getRegistry(6789).lookup("HelloRMI");
-            int serverPort = 6000;//Integer.parseInt(args[0]);
+            TCPserverRMIimplements rmi = (TCPserverRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI"); // ligar ao rmi
+            Departamento dep;
+            if ((dep = rmi.abrirMesaVoto(args[1]))==null){ //abrir mesa de voto retorna departamento da mesa
+                System.out.println("Erro");
+                exit(0);
+            }
+            int serverPort = Integer.parseInt(args[0]); // recerber o port
             System.out.println("A Escuta no Porto "+serverPort);
             ServerSocket listenSocket = new ServerSocket(serverPort);
             System.out.println("LISTEN SOCKET="+listenSocket);
             while (true) {
-                Socket clientSocket = listenSocket.accept(); // BLOQUEANTE
-                System.out.println("CLIENT_SOCKET (created at accept())=" + clientSocket);
-                numero++;
-                new Connection(clientSocket, rmi, numero, 0/*Integer.parseInt(args[1])*/, null/*Integer.parseInt(args[2])*/);
-                System.out.println(numero);
+                // identificar eleitor e eleicao
+                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+                Pessoa eleitor = rmi.identificarEleitor(reader.readLine(),dep); // ver se o eleitor tem eleicoes disponiveis, se sim, retorna a pessoa
+                if (eleitor==null) { // eleitor nao identificado
+                    System.out.println("Eleitor não identificado ou sem eleicoes para votar!");
+                }
+                else { // eleitor identificado
+                    ArrayList<Eleicao> eleicoes = rmi.identificarEleicoes(eleitor,dep); // eleicoes disponiveis para o leitor votar
+                    int i = 0;
+                    for (Eleicao aux : eleicoes)
+                        System.out.println("[" + (++i) + "]" + aux.getTitulo());
+                    System.out.print("->");
+                    Scanner scanner = new Scanner(System.in);
+                    int opcao = scanner.nextInt();
+                    int eleicaoid;
+                    if ((eleicaoid = rmi.escolherEleicao(eleitor,dep,opcao))!=-1) { // eleicao identificada pelo o eleitor
+                        Socket clientSocket = listenSocket.accept(); // BLOQUEANTE
+                        System.out.println("CLIENT_SOCKET (created at accept())=" + clientSocket);
+                        numero++;
+                        new Connection(clientSocket, rmi, numero, eleicaoid, dep, eleitor);
+                        System.out.println(numero);
+                    } else // eleicao nao identificada
+                        System.out.println("\t*Opcao invalida*");
+
+                }
             }
         }catch(IOException e)
         {System.out.println("Listen:" + e.getMessage());} catch (NotBoundException e) {
@@ -44,18 +93,18 @@ class Connection extends Thread {
     private DataOutputStream out;
     private Socket clientSocket;
     private int thread_number;
-    private int eleicaoID; //identificador de eleicao
+    private int eleicaoID; //identificador de eleicao (hashcode)
     private Departamento departamento; //local da eleicao
     private Pessoa eleitor; //eleitor
     private ArrayList<ListaCandidata> votosLista; //lista dos candidatos
     private TCPserverRMIimplements rmi;
 
-    Connection(Socket aClientSocket, TCPserverRMIimplements rmi, int numero, int eleicao, Departamento departamento) {
+    Connection(Socket aClientSocket, TCPserverRMIimplements rmi, int numero, int eleicao, Departamento departamento, Pessoa eleitor) {
         this.thread_number = numero;
         this.eleicaoID = eleicao;
         this.departamento = departamento;
         this.rmi = rmi;
-        this.eleitor = null;
+        this.eleitor = eleitor;
         this.votosLista = null;
 
         try{
@@ -90,7 +139,7 @@ class Connection extends Thread {
         this.clientSocket.shutdownInput();
         this.clientSocket.shutdownOutput();
         this.clientSocket.close();
-        System.exit(0);
+        exit(0);
     }
 
     public void run(){
@@ -99,50 +148,41 @@ class Connection extends Thread {
 
             System.out.println("CLIENT ["+this.thread_number+"]");
             // TYPE/UNLOCK identificar eleitor com o nº CC
-            if((verifica = verifica(this.in))!=null && verifica.get(0).equals("TYPE") &&
-                     verifica.get(1).equals("UNLOCK") && verifica.get(2).equals("CC") && verifica.size()==4){
-                this.eleitor = rmi.identificarEleitor(this.eleicaoID, verifica.get(3));
-                if (this.eleitor==null){
-                    this.out.writeUTF("TYPE|LOCK;CC|NOT FOUND");
+            this.out.writeUTF("\tPasso 1: Autenticar com o seu numero da UC e a sua password (preencher nos '*')" +
+                    "\t'type|auth;uc|*numero da uc*;password|*password*'");
+
+            //----- TYPE/AUTH autenticar eleitor -----
+            if((verifica = verifica(this.in))!=null && verifica.get(0).equals("TYPE") && verifica.get(1).equals("AUTH") &&
+                        verifica.get(2).equals("UC") && verifica.get(4).equals("PASSWORD") && verifica.size()==6){
+
+                if (!(this.eleitor.getPassword().equals(verifica.get(5)))){
+                    this.out.writeUTF("TYPE|AUTH;CREDENTIALS|NOT MATCH");
                     closeSocket();
                 }
-                this.out.writeUTF("TYPE|UNLOCK;CC|FOUND\n\tPasso 2: Autenticar com o seu numero da UC e a sua password (preencher nos '*')" +
-                        "\t'type|auth;uc|*numero da uc*;password|*password*'");
+                String booletim = "TYPE|BULLETIN";
+                int i = 1;
+                this.votosLista = rmi.getListaCandidatas(this.eleicaoID, this.eleitor);
+                if (this.votosLista != null)
+                    for (ListaCandidata aux : this.votosLista){
+                    booletim = ";"+i+"|"+aux.getNome();
+                    i++;
+                }
+                booletim += "\n\tPasso 3: Votar numa das listas do boletim (preencher nos '*')" +
+                        "\t'type|vote;option|*numero da lista*'";
+                this.out.writeUTF(booletim);
 
-                //----- TYPE/AUTH autenticar eleitor -----
-                if((verifica = verifica(this.in))!=null && verifica.get(0).equals("TYPE") && verifica.get(1).equals("AUTH") &&
-                            verifica.get(2).equals("UC") && verifica.get(4).equals("PASSWORD") && verifica.size()==6){
+                //----- TYPE/VOTE voto do eleitor -----
+                if ((verifica = verifica(this.in))!=null && verifica.get(0).equals("TYPE") &&
+                        verifica.get(1).equals("VOTE") && verifica.get(3).equals("OPTION") && verifica.size()==4) {
+                    i = Integer.parseInt(verifica.get(3)) - 1;
 
-                    if (this.eleitor==null || !(this.eleitor.getPassword().equals(verifica.get(5)))){
-                        this.out.writeUTF("TYPE|AUTH;CREDENTIALS|NOT MATCH");
-                        closeSocket();
-                    }
-                    String booletim = "TYPE|BULLETIN";
-                    int i = 1;
-                    this.votosLista = rmi.getListaCandidatas(this.eleicaoID, this.eleitor);
-                    if (this.votosLista != null)
-                        for (ListaCandidata aux : this.votosLista){
-                        booletim = ";"+i+"|"+aux.getNome();
-                        i++;
-                    }
-                    booletim += "\n\tPasso 3: Votar numa das listas do boletim (preencher nos '*')" +
-                            "\t'type|vote;option|*numero da lista*'";
-                    this.out.writeUTF(booletim);
-
-                    //----- TYPE/VOTE voto do eleitor -----
-                    if ((verifica = verifica(this.in))!=null && verifica.get(0).equals("TYPE") &&
-                            verifica.get(1).equals("VOTE") && verifica.get(3).equals("OPTION") && verifica.size()==4) {
-                        i = Integer.parseInt(verifica.get(3)) - 1;
-
-                        Voto voto = new Voto(this.eleitor, this.votosLista.get(i), this.departamento);
-                        rmi.votacaoEleitor(this.eleicaoID, voto);
-                        this.out.writeUTF("\nTYPE|VOTE;VOTE|CONFIRMED");
-                    }else
-                        this.out.writeUTF("TYPE|VOTE;OPTION|UNACKNOWLEDGED");
+                    Voto voto = new Voto(this.eleitor, this.votosLista.get(i), this.departamento);
+                    rmi.votacaoEleitor(this.eleicaoID, voto);
+                    this.out.writeUTF("\nTYPE|VOTE;VOTE|CONFIRMED");
                 }else
-                    this.out.writeUTF("TYPE|AUTH;CREDENTIALS|NOT MATCH");
+                    this.out.writeUTF("TYPE|VOTE;OPTION|UNACKNOWLEDGED");
             }else
-                this.out.writeUTF("TYPE|ERROR");
+                this.out.writeUTF("TYPE|AUTH;CREDENTIALS|NOT MATCH");
             closeSocket();
         }catch(EOFException e){System.out.println("EOF:" + e);
         }catch(IOException e){System.out.println("IO:" + e);
