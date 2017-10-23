@@ -79,6 +79,22 @@ public class Nucleo extends Eleicao implements Serializable {
     }
 
     @Override
+    public void numeroVotosAtual() {
+        System.out.println("Numero de votos(em tempo real): "+ this.listaVotos.size());
+    }
+
+    @Override
+    public void localVoto(String uc) {
+        System.out.println(this.getTitulo());
+        for (Voto aux : listaVotos)
+            if (uc.equals(aux.getEleitor().getNumeroUC())) {
+                System.out.println("Nome: "+aux.getEleitor().getNome());
+                System.out.println("Local: "+aux.getLocal().getNome());
+                System.out.println("Hora: "+aux.getHoraDeVoto());
+            }
+    }
+
+    @Override
     public String toString() {
         return "Nucleo{" +
                 "departamento=" + departamento +

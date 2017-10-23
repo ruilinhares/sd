@@ -10,7 +10,8 @@ import java.util.*;
 
 import static java.lang.System.exit;
 
-public class TCPServer{
+public class TCPServer implements Serializable{
+    private static final long serialVersionUID = 1L;
     private Departamento departamento;
     private ArrayList<Eleicao> listaEleicoes;
     private Boolean estadoMesa;
@@ -23,6 +24,10 @@ public class TCPServer{
 
     public void setEstadoMesa(Boolean estadoMesa) {
         this.estadoMesa = estadoMesa;
+    }
+
+    public void addEleicao(Eleicao e) {
+        this.listaEleicoes.add(e);
     }
 
     public Departamento getDepartamento() {
@@ -45,16 +50,18 @@ public class TCPServer{
         try{
             TCPserverRMIimplements rmi = (TCPserverRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI"); // ligar ao rmi
             Departamento dep;
-            if ((dep = rmi.abrirMesaVoto(args[1]))==null){ //abrir mesa de voto retorna departamento da mesa
+
+            if ((dep = rmi.abrirMesaVoto("nei"/*args[1]*/))==null){ //abrir mesa de voto retorna departamento da mesa
                 System.out.println("Erro");
                 exit(0);
             }
-            int serverPort = Integer.parseInt(args[0]); // recerber o port
+            int serverPort = 6000;//Integer.parseInt(args[0]); // recerber o port
             System.out.println("A Escuta no Porto "+serverPort);
             ServerSocket listenSocket = new ServerSocket(serverPort);
             System.out.println("LISTEN SOCKET="+listenSocket);
             while (true) {
                 // identificar eleitor e eleicao
+                System.out.print("Numero de CC do novo eleitor: ");
                 BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
                 Pessoa eleitor = rmi.identificarEleitor(reader.readLine(),dep); // ver se o eleitor tem eleicoes disponiveis, se sim, retorna a pessoa
                 if (eleitor==null) { // eleitor nao identificado
@@ -77,7 +84,6 @@ public class TCPServer{
                         System.out.println(numero);
                     } else // eleicao nao identificada
                         System.out.println("\t*Opcao invalida*");
-
                 }
             }
         }catch(IOException e)

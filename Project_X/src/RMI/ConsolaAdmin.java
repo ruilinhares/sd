@@ -1,16 +1,21 @@
 package RMI;
 
 import Classes.*;
+import TCP.TCPServer;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Scanner;
 
-public class ConsolaAdmin {
+public class ConsolaAdmin implements Serializable {
     private ConsolaAdmin() {
         super();
     }
@@ -294,6 +299,7 @@ public class ConsolaAdmin {
 
 //  Ponto 3 - CRIAR ELEIÇÕES -------------------------------
 
+
     private void CriarEleicoes(AdminRMIimplements rmi) {
         try {
             System.out.println("CRIAR ELEIÇÃO\n1.Eleição Núcleo de Estudantes\n2.Eleição da Direção Geral");
@@ -392,7 +398,7 @@ public class ConsolaAdmin {
             ArrayList<Funcionario> Func = new ArrayList<>();
 
             ArrayList<Pessoa> listaP = rmi.getListaPessoas();
-            election = new DirecaoGeral(titulo, descricao, ini, fim, EstudantesCandidatos, DocentesCandidatos, FuncionariosCandidatos, Students, Doc, Func);
+            election = new DirecaoGeral(titulo, descricao, ini, fim, EstudantesCandidatos, DocentesCandidatos, FuncionariosCandidatos, new ArrayList<>());
             for (Pessoa p : listaP) {
                 p.AddEleitorGeral(election);
             }
@@ -443,6 +449,74 @@ public class ConsolaAdmin {
         }
     }
 
+//  Ponto   - SABER O LOCAL DE VOTO DE CADA ELEITOR
+    private void localVotoEleitor(AdminRMIimplements rmi) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("\tLocais de voto do eleitor\n");
+        System.out.print("Numero da UC: ");
+        String numeroUC = reader.readLine();
+        ArrayList<Eleicao> eleicoes = new ArrayList<>();
+        try {
+            eleicoes = rmi.getListaEleicoes();
+        } catch (RemoteException e) {
+            try {
+                rmi = (AdminRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI");
+                eleicoes = rmi.getListaEleicoes();
+                Thread.sleep(30000);
+            } catch (NotBoundException | MalformedURLException | RemoteException ignored) {
+            } catch (InterruptedException e1) {
+                System.out.println("\n\t*Avaria no RMI Server*");
+                e1.printStackTrace();
+            }
+        }
+        for (Eleicao aux : eleicoes)
+            if (!aux.vericaVotacaoPassou())
+                aux.localVoto(numeroUC);
+    }
+
+//  Ponto 12  - CONSULTAR ELEICOES EM TEMPO REAL
+    private void consultarEleicoesTempoReal(AdminRMIimplements rmi)  {
+        int i = 0;
+        ArrayList<TCPServer> mesasVotos = new ArrayList<>();
+        try {
+            mesasVotos = rmi.getMesasVotos();
+        } catch (RemoteException e) {
+            try {
+                rmi = (AdminRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI");
+                mesasVotos = rmi.getMesasVotos();
+                Thread.sleep(30000);
+            } catch (NotBoundException | MalformedURLException | RemoteException ignored) {
+            } catch (InterruptedException e1) {
+                System.out.println("\n\t*Avaria no RMI Server*");
+                e1.printStackTrace();
+            }
+        }
+        if (!mesasVotos.isEmpty()) {
+            System.out.println("\tMesas de Votos abertas:");
+            for (TCPServer mesa : mesasVotos) {
+                System.out.println("merda");
+                if (mesa.getEstadoMesa())
+                    System.out.println("[" + (++i) + "]" + mesa.getDepartamento().getNome());
+            }
+            if (i!=0) {
+                System.out.print("->");
+                Scanner scanner = new Scanner(System.in);
+                TCPServer mesaEscolhida = mesasVotos.get(scanner.nextInt() - 1);
+
+                System.out.println("\tEleicoes Ativas: ");
+                for (Eleicao eleicao : mesaEscolhida.getListaEleicoes()) {
+                    if (eleicao.verificaVotacao()) {
+                        System.out.println(eleicao.getTitulo());
+                        eleicao.numeroVotosAtual();
+                        System.out.println();
+                    }
+                }
+            }else
+                System.out.println("\t*Nao ha mesas de votos ativas*");
+        }else
+            System.out.println("\t*Nao ha mesas de votos*");
+    }
+
     private void MenuAdmnin(AdminRMIimplements rmi) {
         System.out.println("Esolha uma opção:\n1.Registar Pessoas\n2.Gerir Departamentos\n3.Criar Eleição\n4.Gerir Listas Candidatas\n5.Gerir Mesas de Votos\n6.Alterar propriedades de uma eleição");
         Scanner sc = new Scanner(System.in);
@@ -455,7 +529,7 @@ public class ConsolaAdmin {
             } catch (NumberFormatException e) {
                 opcaoint = 0;
             }
-        } while (opcaoint <= 0 || opcaoint > 6);
+        } while (opcaoint <= 0 || opcaoint > 7);
         try {
             switch (opcaoint) {
                 case 1:
@@ -476,6 +550,9 @@ public class ConsolaAdmin {
                 case 6:
                     ALterarEleicao(rmi);
                     break;
+                case 7:
+                    consultarEleicoesTempoReal(rmi);
+                    break;
                 default:
                     // The user input an unexpected choice.
             }
@@ -487,9 +564,10 @@ public class ConsolaAdmin {
 
     public static void main(String args[]) {
         try {
-            AdminRMIimplements rmi = (AdminRMIimplements) LocateRegistry.getRegistry(6789).lookup("HelloRMI");
+            AdminRMIimplements rmi = (AdminRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI");
             rmi.sayHello();
             ConsolaAdmin consolaAdmin = new ConsolaAdmin();
+
             consolaAdmin.MenuAdmnin(rmi);
 
         }catch (Exception e){
@@ -497,5 +575,4 @@ public class ConsolaAdmin {
             e.printStackTrace();
         }
     }
-
 }

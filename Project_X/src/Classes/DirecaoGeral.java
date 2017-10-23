@@ -20,14 +20,16 @@ public class DirecaoGeral extends Eleicao implements Serializable {
     public DirecaoGeral() {
     }
 
-    public DirecaoGeral(String titulo, String descricao, Calendar inicio, Calendar fim, ArrayList<ListaCandidata> listaCandidatosEstudantes, ArrayList<ListaCandidata> listaCandidatosDocentes, ArrayList<ListaCandidata> listaCandidatosFuncionarios, ArrayList<Estudante> listaEstudantes, ArrayList<Docente> listaDocentes, ArrayList<Funcionario> listaFuncionarios) {
+    public DirecaoGeral(String titulo, String descricao, Calendar inicio, Calendar fim, ArrayList<ListaCandidata> listaCandidatosEstudantes, ArrayList<ListaCandidata> listaCandidatosDocentes, ArrayList<ListaCandidata> listaCandidatosFuncionarios, ArrayList<Pessoa> listaEleitores) {
         super(titulo, descricao, inicio, fim);
         this.listaCandidatosEstudantes = listaCandidatosEstudantes;
         this.listaCandidatosDocentes = listaCandidatosDocentes;
         this.listaCandidatosFuncionarios = listaCandidatosFuncionarios;
-        this.listaEstudantes = listaEstudantes;
-        this.listaDocentes = listaDocentes;
-        this.listaFuncionarios = listaFuncionarios;
+        this.listaEstudantes = new ArrayList<>();
+        this.listaDocentes = new ArrayList<>();
+        this.listaFuncionarios = new ArrayList<>();
+        for (Pessoa p : listaEleitores)
+            p.AddEleitorGeral(this);
         this.listaVotosEstudantes = new ArrayList<>();
         this.listaVotosDocentes = new ArrayList<>();
         this.listaVotosFuncionarios = new ArrayList<>();
@@ -225,6 +227,44 @@ public class DirecaoGeral extends Eleicao implements Serializable {
                 EditaCandidatosEstudantes();
                 break;
         }
+    }
+
+    @Override
+    public void numeroVotosAtual() {
+        System.out.println("(Estudantes)Numero de votos(em tempo real): " + this.listaVotosEstudantes.size());
+        System.out.println("(Docentes)Numero de votos(em tempo real): " + this.listaVotosDocentes.size());
+        System.out.println("(Funcionarios)Numero de votos(em tempo real): " + this.listaVotosFuncionarios.size());
+    }
+
+    @Override
+    public void localVoto(String uc) {
+        System.out.println(this.getTitulo());
+        int v = 0;
+        for (Voto aux : listaVotosEstudantes)
+            if (uc.equals(aux.getEleitor().getNumeroUC())) {
+                System.out.print("(Estudantes)");
+                System.out.println("Nome: "+aux.getEleitor().getNome());
+                System.out.println("Local: "+aux.getLocal().getNome());
+                System.out.println("Hora: "+aux.getHoraDeVoto());
+                v=1;
+            }
+        if (v == 0)
+            for (Voto aux : listaVotosDocentes)
+                if (uc.equals(aux.getEleitor().getNumeroUC())) {
+                    System.out.print("(Docentes)");
+                    System.out.println("Nome: "+aux.getEleitor().getNome());
+                    System.out.println("Local: "+aux.getLocal().getNome());
+                    System.out.println("Hora: "+aux.getHoraDeVoto());
+                    v=1;
+                }
+        if (v==0)
+            for (Voto aux : listaVotosFuncionarios)
+                if (uc.equals(aux.getEleitor().getNumeroUC())) {
+                    System.out.print("(Funcionarios)");
+                    System.out.println("Nome: "+aux.getEleitor().getNome());
+                    System.out.println("Local: "+aux.getLocal().getNome());
+                    System.out.println("Hora: "+aux.getHoraDeVoto());
+                }
     }
 }
 

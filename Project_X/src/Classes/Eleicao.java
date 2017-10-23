@@ -63,6 +63,8 @@ public abstract class Eleicao implements Serializable {
     public boolean verificaVotacao(){ //verifica se a eleição está aberta ou não
         Calendar DataAtual = Calendar.getInstance();
                //Eleição dentro do horário     //ELeição fora do horário
+        System.out.println(DataAtual.after(this.inicio));
+        System.out.println(DataAtual.before(this.fim));
         return DataAtual.after(this.inicio) && DataAtual.before(this.fim);
     }
 
@@ -72,6 +74,10 @@ public abstract class Eleicao implements Serializable {
     }
 
     public void EditaCandidatos(){}
+
+    public abstract void numeroVotosAtual();
+
+    public abstract void localVoto(String uc);
 
     public String toString() {
         return "Eleicao{" +

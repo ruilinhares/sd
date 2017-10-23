@@ -1,10 +1,13 @@
 package RMI;
 import Classes.*;
+import TCP.TCPServer;
 
 import java.rmi.*;
 import java.util.ArrayList;
 
 public interface AdminRMIimplements extends Remote {
+
+    ArrayList<TCPServer> getMesasVotos() throws java.rmi.RemoteException;
 
 	ArrayList<Eleicao> getListaEleicoes() throws java.rmi.RemoteException;
 

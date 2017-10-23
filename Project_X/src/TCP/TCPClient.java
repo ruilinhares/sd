@@ -25,9 +25,7 @@ public class TCPClient {
 			String texto = "";
 			InputStreamReader input = new InputStreamReader(System.in);
 			BufferedReader reader = new BufferedReader(input);
-			System.out.println("Bem Vindo ao Terminal de Voto\n" +
-					"Sigas os passos\n\tPasso 1: Identificar com o Cartao de Cidadao" +
-					"\t'type|lock;cc|*numero do seu cartao de cidadao*'");
+			System.out.println("Bem Vindo ao Terminal de Voto");
 
 			// 3o passo
 			while (true) {
