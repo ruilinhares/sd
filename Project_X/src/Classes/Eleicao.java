@@ -1,13 +1,16 @@
 package Classes;
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.*;
+
 
 public abstract class Eleicao implements Serializable {
     String Titulo;
     String Descricao;
     Calendar inicio;
     Calendar fim;
+    // serveresTCP
 
     Eleicao(){}
 
@@ -62,7 +65,7 @@ public abstract class Eleicao implements Serializable {
 
     public boolean verificaVotacao(){ //verifica se a eleição está aberta ou não
         Calendar DataAtual = Calendar.getInstance();
-               //Eleição dentro do horário     //ELeição fora do horário
+        //Eleição dentro do horário     //ELeição fora do horário
         System.out.println(DataAtual.after(this.inicio));
         System.out.println(DataAtual.before(this.fim));
         return DataAtual.after(this.inicio) && DataAtual.before(this.fim);
@@ -74,6 +77,8 @@ public abstract class Eleicao implements Serializable {
     }
 
     public void EditaCandidatos(){}
+
+    public void Print(){}
 
     public abstract void numeroVotosAtual();
 

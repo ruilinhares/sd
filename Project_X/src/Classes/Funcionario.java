@@ -32,4 +32,9 @@ public class Funcionario extends Pessoa implements Serializable {
     public ArrayList<ListaCandidata> getListaCandidataGeral(DirecaoGeral dg) {
         return dg.getListaCandidatosFuncionarios();
     }
+
+    @Override
+    public String toString() {
+        return "Funcionario{}";
+    }
 }

@@ -33,4 +33,9 @@ public class Estudante extends Pessoa implements Serializable {
     public ArrayList<ListaCandidata> getListaCandidataGeral(DirecaoGeral dg) {
         return dg.getListaCandidatosEstudantes();
     }
+
+    @Override
+    public String toString() {
+        return "Estudante{}";
+    }
 }

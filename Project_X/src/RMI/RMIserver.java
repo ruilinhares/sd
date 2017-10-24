@@ -1,16 +1,14 @@
 package RMI;
-
+import java.io.*;
 import Classes.*;
 import TCP.TCPServer;
-
 import java.io.*;
 import java.net.*;
 import java.rmi.*;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.*;
-import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.*;
 
 import static java.lang.System.exit;
 
@@ -23,7 +21,6 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
     private ArrayList<Departamento> listaDepartamentos;
     private ArrayList<Pessoa> listaPessoas;
     private ArrayList<TCPServer> mesasVotos;
-
     RMIserver() throws RemoteException {
         super();
     }
@@ -65,13 +62,14 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         return listaPessoas;
     }
 
+    public ArrayList<TCPServer> getMesasVotos(){
+        return mesasVotos;
+    }
+
     public  void addDepartamento(Departamento dep){
         this.listaDepartamentos.add(dep);
     }
 
-    public ArrayList<TCPServer> getMesasVotos() {
-        return mesasVotos;
-    }
 
     public void sayHello() throws RemoteException {
         System.out.println("print do lado do servidor...!.");
@@ -92,7 +90,13 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
                 return aux;
         return null;
     }
+    public void RemoveDepartamento(int i){
+        this.listaDepartamentos.remove(i);
+    }
 
+    public void AddDepartamento(Departamento dep){
+        this.listaDepartamentos.add(dep);
+    }
     // Ponto 1 - REGISTAR PESSOA
     public Boolean registarPessoa (Pessoa pessoa) throws RemoteException{
 
@@ -104,6 +108,7 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         for (Departamento dep : listaDepartamentos)
             if (pessoa.getDepartamento().equals(dep)) {
                 pessoa.inserirPessoaNaLista(listaPessoas, dep);
+                this.listaPessoas.add(pessoa);
                 return true;
             }
         return false;
@@ -126,6 +131,14 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         this.listaEleicoes.add(eleicao);
     }
 
+    public void RemoveEleicao(int i){
+        this.listaEleicoes.remove(i);
+    }
+
+    public void RemoveMesa(int i){
+        this.mesasVotos.remove(i);
+    }
+
     // Ponto 4 - GERIR LISTAS DE CANDIDATOS A UMA ELEICAO
 
 
@@ -137,7 +150,6 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
     //public void removerMesaVoto(Eleicao eleicao, MesaVoto mesa) throws RemoteException
 
     //-----TCPserver-client-------------------------------------
-
     // ABRIR MESA DE VOTO
     public Departamento abrirMesaVoto(String dep){
         for (TCPServer aux : mesasVotos)
@@ -147,15 +159,14 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
             }
         return null;
     }
-
     // Ponto 6 IDENTIFICAR UM ELEITOR
     @Override
     public Pessoa identificarEleitor(String numerocc, Departamento dep) throws RemoteException{
         for (TCPServer mesaux : this.mesasVotos)
             if (mesaux.getDepartamento().getNome().equals(dep.getNome()))
-                for (Eleicao aux : mesaux.getListaEleicoes())
+                for (Eleicao aux: mesaux.getListaEleicoes())
                     if (aux.verificaVotacao())
-                        for (Pessoa pessoa : aux.getListaEleitores())
+                        for (Pessoa pessoa: aux.getListaEleitores())
                             if (pessoa.getNumeroCC().equals(numerocc))
                                 return pessoa;
         return null;
@@ -175,6 +186,11 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         return eleicoes;
     }
 
+    //adiciona uma mesa criada a lista de mesas de voto
+    public void AddMesa(TCPServer mesa){
+        mesasVotos.add(mesa);
+    }
+
     public int escolherEleicao(Pessoa eleitor, Departamento dep, int i){
         int count = 0;
         for (TCPServer mesaux : this.mesasVotos)
@@ -187,7 +203,6 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         return -1;
     }
     // Ponto 7 AUTENTICAR ELEITOR
-
     // Ponto 8 (VALIDAR O VOTO DO ELEITOR)
     @Override
     public void votacaoEleitor(int eleicaohashcode, Voto voto) throws RemoteException {
@@ -208,14 +223,13 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
             }
         return null;
     }
-
     //---UDP----------------------------------------------------
 
     private void udpServerON(){
         new Thread(new UDPServer()).start();
     }
 
-    //---Base-Dados---------------------------------------------
+    //---Base-Dados-----
     public void start() {
         ObjectInputStream objectinputstream1 = null;
         ObjectInputStream objectinputstream2 = null;
@@ -250,6 +264,7 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         }
     }
 
+
     public void Store(){
         ObjectOutputStream oos1=null,oos2=null,oos3=null;
         FileOutputStream fout1,fout2,fout3;
@@ -278,6 +293,9 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         }
     }
 
+    //---UDP----------------------------------------------------
+
+
     // =========================================================
     public static void main(String args[]) throws RemoteException {
 
@@ -293,7 +311,7 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
             System.out.println("Remote Exception no RMI Server: " + re.getMessage()+"\nRMI Backup...");
             // Criar ligação com RMI primário
             try {
-            //  -------------UDP-Client--------------------
+                //  -------------UDP-Client--------------------
                 DatagramSocket clientSocket = null;
                 try{
                     clientSocket = new DatagramSocket();
@@ -310,8 +328,7 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
                             clientSocket.receive(receivePacket);
                             Thread.sleep(5000); // tempo de espera da resposta
                             System.out.println("RMI primario:" + new String(receivePacket.getData(), 0, receivePacket.getLength()));
-                        } catch (SocketTimeoutException e) { // socket timeout exception
-                            // RMI Server primário foi a baixo
+                        } catch (SocketTimeoutException e) { // socket timeout exception                            // RMI Server primário foi a baixo
                             // RMI Backup assume o controlo
                             clientSocket.close();
                             System.out.println("Timeout ultrapassado! " + e.getMessage());

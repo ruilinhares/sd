@@ -69,5 +69,5 @@ public abstract class Pessoa implements Serializable {
 
     public abstract ArrayList<ListaCandidata> getListaCandidataGeral(DirecaoGeral dg);
 
-
+    public void Print() {}
 }

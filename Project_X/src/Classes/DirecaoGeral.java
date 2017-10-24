@@ -1,12 +1,10 @@
 package Classes;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.Scanner;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
-public class DirecaoGeral extends Eleicao implements Serializable {
+public class DirecaoGeral extends Eleicao implements Serializable{
     private ArrayList<Voto> listaVotosEstudantes;
     private ArrayList<Voto> listaVotosDocentes;
     private ArrayList<Voto> listaVotosFuncionarios;
@@ -37,8 +35,8 @@ public class DirecaoGeral extends Eleicao implements Serializable {
         this.listaCandidatosEstudantes.add(new ListaCandidata("Voto em Branco"));
         this.listaCandidatosDocentes.add(new ListaCandidata("Voto Nulo"));
         this.listaCandidatosDocentes.add(new ListaCandidata("Voto em Branco"));
-        this.listaCandidatosDocentes.add(new ListaCandidata("Voto Nulo"));
-        this.listaCandidatosDocentes.add(new ListaCandidata("Voto em Branco"));
+        this.listaCandidatosFuncionarios.add(new ListaCandidata("Voto Nulo"));
+        this.listaCandidatosFuncionarios.add(new ListaCandidata("Voto em Branco"));
     }
 
     @Override
@@ -213,7 +211,7 @@ public class DirecaoGeral extends Eleicao implements Serializable {
     }
 
     public void EditaCandidatos(){
-        System.out.println("Listas Candidatas de : 1 - Funiconários\n2 - Docentes\n3 - Estudantes");
+        System.out.println("Listas Candidatas de : \n1 - Funiconários\n2 - Docentes\n3 - Estudantes");
         Scanner sc = new Scanner(System.in);
         int op=sc.nextInt();
         switch (op) {
@@ -228,6 +226,47 @@ public class DirecaoGeral extends Eleicao implements Serializable {
                 break;
         }
     }
+
+    public void Print() {
+        System.out.println(Titulo);
+        System.out.println(Descricao);
+        Date Datainicio=inicio.getTime();
+        Date Datafim=fim.getTime();
+        SimpleDateFormat fim = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+        System.out.println("Inicio: "+fim.format(Datainicio));
+        System.out.println("Fim: "+fim.format(Datafim));
+        System.out.println("FUNCIONÁRIOS");
+        for (ListaCandidata lista: listaCandidatosFuncionarios){
+            System.out.println(lista.getNome());
+            int conta=0;
+            for (Voto voto: listaVotosFuncionarios){
+                if (voto.getTipo().getNome().equals(lista.getNome()))
+                    conta++;
+            }
+            System.out.println("Número de votos: "+conta);
+        }
+        System.out.println("DOCENTES");
+        for (ListaCandidata lista: listaCandidatosDocentes){
+            System.out.println(lista.getNome());
+            int conta=0;
+            for (Voto voto: listaVotosDocentes){
+                if (voto.getTipo().getNome().equals(lista.getNome()))
+                    conta++;
+            }
+            System.out.println("Número de votos: "+conta);
+        }
+        System.out.println("ESTUDANTES");
+        for (ListaCandidata lista: listaCandidatosEstudantes){
+            System.out.println(lista.getNome());
+            int conta=0;
+            for (Voto voto: listaVotosEstudantes){
+                if (voto.getTipo().getNome().equals(lista.getNome()))
+                    conta++;
+            }
+            System.out.println("Número de votos: "+conta);
+        }
+    }
+
 
     @Override
     public void numeroVotosAtual() {
@@ -267,4 +306,3 @@ public class DirecaoGeral extends Eleicao implements Serializable {
                 }
     }
 }
-

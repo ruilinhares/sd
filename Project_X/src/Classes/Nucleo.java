@@ -3,7 +3,9 @@ package Classes;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Scanner;
+import java.text.*;
 
 public class Nucleo extends Eleicao implements Serializable {
     private Departamento departamento;
@@ -41,8 +43,14 @@ public class Nucleo extends Eleicao implements Serializable {
 
     @Override
     public ArrayList<ListaCandidata> getListaCandidatos(Pessoa pessoa) {
+        return null;
+    }
+
+
+    public ArrayList<ListaCandidata> getListaCandidatos() {
         return this.listaCandidatos;
     }
+
 
     @Override
     public void EditaCandidatos(){
@@ -59,10 +67,10 @@ public class Nucleo extends Eleicao implements Serializable {
             if(this.listaCandidatos.isEmpty())
                 return;
             System.out.println("Escolha uma lista a remover");
-            int i=1;
+            int i=0;
             for (ListaCandidata dep: this.listaCandidatos){
-                System.out.println(i+" - "+dep.getNome());
                 i++;
+                System.out.println(i+" - "+dep.getNome());
             }
             String opcao;
             opcao=sc.nextLine();
@@ -75,6 +83,26 @@ public class Nucleo extends Eleicao implements Serializable {
                 }
             }while(opcaoint<=0 || opcaoint>this.listaCandidatos.size());
             this.listaCandidatos.remove(opcaoint-1);
+        }
+    }
+
+    @Override
+    public void Print() {
+        System.out.println(Titulo);
+        System.out.println(Descricao);
+        Date Datainicio=inicio.getTime();
+        Date Datafim=fim.getTime();
+        SimpleDateFormat fim = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+        System.out.println("Inicio: "+fim.format(Datainicio));
+        System.out.println("Fim: "+fim.format(Datafim));
+        for (ListaCandidata lista: listaCandidatos){
+            System.out.println(lista.getNome());
+            int conta=0;
+            for (Voto voto: listaVotos){
+                if (voto.getTipo().getNome().equals(lista.getNome()))
+                    conta++;
+            }
+            System.out.println("Número de votos: "+conta);
         }
     }
 

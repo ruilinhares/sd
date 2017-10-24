@@ -121,21 +121,21 @@ class Connection extends Thread {
         }catch(IOException e){System.out.println("Connection:" + e.getMessage());}
     }
     //=============================
-	private static ArrayList<String> verifica(DataInputStream in) throws IOException {
+    private static ArrayList<String> verifica(DataInputStream in) throws IOException {
         //an echo server
         String data = in.readUTF();
         data=data.toUpperCase();
         if (!data.contains(";"))
             return null;
         String[] nova = data.split(";");
-		ArrayList<String> lista= new ArrayList<>();
-		for (String pal: nova){
+        ArrayList<String> lista= new ArrayList<>();
+        for (String pal: nova){
             String[] temp=pal.split("\\|");
             System.out.println(temp[1]);
             lista.add(temp[0]);
-			lista.add(temp[1]);
+            lista.add(temp[1]);
         }
-        System.out.println(lista);        
+        System.out.println(lista);
         return lista;
     }
 
@@ -159,7 +159,7 @@ class Connection extends Thread {
 
             //----- TYPE/AUTH autenticar eleitor -----
             if((verifica = verifica(this.in))!=null && verifica.get(0).equals("TYPE") && verifica.get(1).equals("AUTH") &&
-                        verifica.get(2).equals("UC") && verifica.get(4).equals("PASSWORD") && verifica.size()==6){
+                    verifica.get(2).equals("UC") && verifica.get(4).equals("PASSWORD") && verifica.size()==6){
 
                 if (!(this.eleitor.getPassword().equals(verifica.get(5)))){
                     this.out.writeUTF("TYPE|AUTH;CREDENTIALS|NOT MATCH");
@@ -170,9 +170,9 @@ class Connection extends Thread {
                 this.votosLista = rmi.getListaCandidatas(this.eleicaoID, this.eleitor);
                 if (this.votosLista != null)
                     for (ListaCandidata aux : this.votosLista){
-                    booletim = ";"+i+"|"+aux.getNome();
-                    i++;
-                }
+                        booletim = ";"+i+"|"+aux.getNome();
+                        i++;
+                    }
                 booletim += "\n\tPasso 3: Votar numa das listas do boletim (preencher nos '*')" +
                         "\t'type|vote;option|*numero da lista*'";
                 this.out.writeUTF(booletim);
@@ -195,5 +195,4 @@ class Connection extends Thread {
         }catch (Exception e){System.out.println(e.getMessage());}
     }
 }
-
 
