@@ -17,7 +17,7 @@ public class Voto implements Serializable {
         this.local = local;
     }
 
-    Pessoa getEleitor() {
+    public Pessoa getEleitor() {
         return eleitor;
     }
 

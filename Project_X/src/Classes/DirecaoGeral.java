@@ -62,15 +62,27 @@ public class DirecaoGeral extends Eleicao implements Serializable{
     }
 
     void removeEleitorEstudante(Voto voto) {
-        this.listaVotosEstudantes.add(voto);
+        for (Pessoa p : listaEstudantes)
+            if (p.getNumeroCC().equals(voto.getEleitor().getNumeroCC())) {
+                this.listaEstudantes.remove(p);
+                break;
+            }
     }
 
     void removeEleitorDocente(Voto voto) {
-        this.listaVotosDocentes.add(voto);
+        for (Pessoa p : listaDocentes)
+            if (p.getNumeroCC().equals(voto.getEleitor().getNumeroCC())) {
+                this.listaDocentes.remove(p);
+                break;
+            }
     }
 
     void removeEleitorFuncionario(Voto voto) {
-        this.listaVotosFuncionarios.add(voto);
+        for (Pessoa p : listaFuncionarios)
+            if (p.getNumeroCC().equals(voto.getEleitor().getNumeroCC())) {
+                this.listaFuncionarios.remove(p);
+                break;
+            }
     }
 
     void AddEstudante(Estudante p){
@@ -210,6 +222,7 @@ public class DirecaoGeral extends Eleicao implements Serializable{
         }
     }
 
+    @Override
     public void EditaCandidatos(){
         System.out.println("Listas Candidatas de : \n1 - Funiconários\n2 - Docentes\n3 - Estudantes");
         Scanner sc = new Scanner(System.in);
@@ -227,6 +240,7 @@ public class DirecaoGeral extends Eleicao implements Serializable{
         }
     }
 
+    @Override
     public void Print() {
         System.out.println(Titulo);
         System.out.println(Descricao);
@@ -266,7 +280,6 @@ public class DirecaoGeral extends Eleicao implements Serializable{
             System.out.println("Número de votos: "+conta);
         }
     }
-
 
     @Override
     public void numeroVotosAtual() {

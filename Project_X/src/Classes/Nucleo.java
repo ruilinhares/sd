@@ -18,7 +18,9 @@ public class Nucleo extends Eleicao implements Serializable {
         this.departamento = departamento;
         this.listaCandidatos = listaCandidatos;
         this.listaVotos = new ArrayList<>();
-        this.listaEleitores = new ArrayList<>(departamento.getListaEstudantes());
+        this.listaEleitores = new ArrayList<>();
+        this.listaEleitores.addAll(departamento.getListaEstudantes());
+        System.out.println(listaEleitores.size());
         this.listaCandidatos.add(new ListaCandidata("Voto Nulo"));
         this.listaCandidatos.add(new ListaCandidata("Voto em Branco"));
     }
@@ -36,21 +38,13 @@ public class Nucleo extends Eleicao implements Serializable {
 
     @Override
     public ArrayList<Pessoa> getListaEleitores(){
-        ArrayList<Pessoa> lista = new ArrayList<>();
-        lista.addAll(this.departamento.getListaEstudantes());
-        return lista;
+        return this.listaEleitores;
     }
 
     @Override
     public ArrayList<ListaCandidata> getListaCandidatos(Pessoa pessoa) {
-        return null;
+        return listaCandidatos;
     }
-
-
-    public ArrayList<ListaCandidata> getListaCandidatos() {
-        return this.listaCandidatos;
-    }
-
 
     @Override
     public void EditaCandidatos(){

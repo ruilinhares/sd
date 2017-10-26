@@ -9,7 +9,9 @@ public interface TCPserverRMIimplements extends Remote {
 
     Departamento abrirMesaVoto(String dep) throws java.rmi.RemoteException;
 
-    Pessoa identificarEleitor(String numerocc, Departamento dep) throws java.rmi.RemoteException;
+    void fecharMesaVoto(String dep) throws java.rmi.RemoteException;
+
+    Pessoa identificarEleitor(String numerocc) throws java.rmi.RemoteException;
 
     ArrayList<Eleicao> identificarEleicoes(Pessoa eleitor, Departamento dep) throws java.rmi.RemoteException;
 

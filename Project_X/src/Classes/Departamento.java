@@ -20,7 +20,7 @@ public class Departamento implements Serializable{
         this.nome = nome;
     }
 
-    ArrayList<Estudante> getListaEstudantes() {
+    public ArrayList<Estudante> getListaEstudantes() {
         return this.ListaEstudantes;
     }
 

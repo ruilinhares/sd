@@ -8,6 +8,8 @@ import java.net.*;
 import java.rmi.*;
 import java.util.*;
 
+import static java.lang.System.exit;
+
 public class ConsolaAdmin implements Serializable{
     private ConsolaAdmin() {
         super();
@@ -153,15 +155,17 @@ public class ConsolaAdmin implements Serializable{
             Departamento = EscolheDepartamento(rmi);
 
             System.out.println("Registar nova Pessoa!\n\n[1]Estudante [2]Docente [3]Funcionario\n-> ");
-            if (reader.readLine().equals("1"))
+            String opcao = reader.readLine();
+            if (opcao.equals("1"))
                 novapessoa = new Estudante(Nome,NumeroUC,Telemovel,Morada,Password,Departamento,NumeroCC,Validade);
-            else if (reader.readLine().equals("2"))
+            else if (opcao.equals("2"))
                 novapessoa = new Docente(Nome,NumeroUC,Telemovel,Morada,Password,Departamento,NumeroCC,Validade);
-            else if (reader.readLine().equals("3"))
+            else if (opcao.equals("3"))
                 novapessoa = new Funcionario(Nome,NumeroUC,Telemovel,Morada,Password,Departamento,NumeroCC,Validade);
             else
-                novapessoa = null;
-            rmi.registarPessoa(novapessoa);
+               return;
+            System.out.println(rmi.registarPessoa(novapessoa));
+
         }catch (Exception e) {
             System.out.println("Error\n"+e.getMessage());
         }
@@ -272,6 +276,10 @@ public class ConsolaAdmin implements Serializable{
                 count++;
                 System.out.printf("[%d] %s\n",count,auxDep.getNome());
 
+            }
+            if (count==0) {
+                System.out.println("Não existem departamentos");
+                return;
             }
             System.out.println("\nEscolha o Departamenta a apagar\n->");
             int opcao = scanner.nextInt();
@@ -472,7 +480,6 @@ public class ConsolaAdmin implements Serializable{
         }
     }
 
-
     private void CriaMesadeVoto(AdminRMIimplements rmi) {
         try {
             Departamento dep = EscolheDepartamento(rmi);
@@ -493,7 +500,7 @@ public class ConsolaAdmin implements Serializable{
     private void ApagaMesadeVoto(AdminRMIimplements rmi){
         try{
             if (rmi.getMesasVotos().isEmpty()){
-                System.out.println("Não há mesas de voto");
+                System.out.println("\n*Nao ha mesas de voto*");
                 return;
             }
             int i=0;
@@ -532,11 +539,6 @@ public class ConsolaAdmin implements Serializable{
             Eleicao ele=EscolheEleicao(rmi);
             if (ele==null)
                 return;
-            for (int i=0;i<rmi.getListaEleicoes().size();i++){
-                if (ele.getTitulo().equals(rmi.getListaEleicoes().get(i).getTitulo()) && ele.getDescricao().equals(rmi.getListaEleicoes().get(i).getDescricao() )){
-                    rmi.RemoveEleicao(i);
-                }
-            }
             int i=0;
             for(TCPServer mesa: rmi.getMesasVotos()) {
                 i++;
@@ -568,7 +570,6 @@ public class ConsolaAdmin implements Serializable{
             }
             mesaescolhida.addEleicao(ele);
             rmi.AddMesa(mesaescolhida);
-
         }catch(Exception e){
             System.out.println(e.getMessage());
             e.printStackTrace();
@@ -675,7 +676,7 @@ public class ConsolaAdmin implements Serializable{
         }
     }
 
-    //  Ponto   - SABER O LOCAL DE VOTO DE CADA ELEITOR
+    //  Ponto 10 - SABER O LOCAL DE VOTO DE CADA ELEITOR
     private void localVotoEleitor(AdminRMIimplements rmi) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("\tLocais de voto do eleitor\n");
@@ -696,31 +697,38 @@ public class ConsolaAdmin implements Serializable{
             }
         }
         for (Eleicao aux : eleicoes)
-            if (!aux.vericaVotacaoPassou())
-                aux.localVoto(numeroUC);
+            aux.localVoto(numeroUC);
     }
 
     //  Ponto 12  - CONSULTAR ELEICOES EM TEMPO REAL
     private void consultarEleicoesTempoReal(AdminRMIimplements rmi)  {
         int i = 0;
         ArrayList<TCPServer> mesasVotos = new ArrayList<>();
-        try {
-            mesasVotos = rmi.getMesasVotos();
-        } catch (RemoteException e) {
+        Boolean flag = false;
+        int sleep = 1000;
+        while (!flag){
             try {
-                rmi = (AdminRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI");
                 mesasVotos = rmi.getMesasVotos();
-                Thread.sleep(30000);
-            } catch (NotBoundException | MalformedURLException | RemoteException ignored) {
-            } catch (InterruptedException e1) {
-                System.out.println("\n\t*Avaria no RMI Server*");
-                e1.printStackTrace();
+                flag = true;
+            } catch (RemoteException e) {
+                try {
+                    flag = false;
+                    rmi = (AdminRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI");
+                    mesasVotos = rmi.getMesasVotos();
+                    Thread.sleep(sleep);
+                } catch (NotBoundException | MalformedURLException | RemoteException ignored) {
+                } catch (InterruptedException e1) {
+                    if (sleep>=16000) {
+                        System.out.println("\n\t*Avaria no RMI Server*");
+                        exit(0);
+                    }
+                    sleep*=2;
+                }
             }
         }
         if (!mesasVotos.isEmpty()) {
             System.out.println("\tMesas de Votos abertas:");
             for (TCPServer mesa : mesasVotos) {
-                System.out.println("merda");
                 if (mesa.getEstadoMesa())
                     System.out.println("[" + (++i) + "]" + mesa.getDepartamento().getNome());
             }
@@ -731,11 +739,11 @@ public class ConsolaAdmin implements Serializable{
 
                 System.out.println("\tEleicoes Ativas: ");
                 for (Eleicao eleicao : mesaEscolhida.getListaEleicoes()) {
-                    if (eleicao.verificaVotacao()) {
+                    //if (eleicao.verificaVotacao()) {
                         System.out.println(eleicao.getTitulo());
                         eleicao.numeroVotosAtual();
                         System.out.println();
-                    }
+                   // }
                 }
             }else
                 System.out.println("\t*Nao ha mesas de votos ativas*");
@@ -743,25 +751,41 @@ public class ConsolaAdmin implements Serializable{
             System.out.println("\t*Nao ha mesas de votos*");
     }
 
+    static void reconectarteste(AdminRMIimplements rmi){
+        Boolean flag = false;
+        try {
+            rmi.wait(30000);
+            System.out.println("tou aqui");
+            while (!flag) {
+                System.out.println("merda merda");
+                try {
+                    rmi = (AdminRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI");
+                    flag = true;
+                    rmi.notify();
+                } catch (NotBoundException | RemoteException | MalformedURLException ignored) {
+                    flag = false;
+                }
+            }
+        }catch (InterruptedException e) {
+            System.out.println("merda");
+        }
+    }
+
 
     private void MenuAdmnin(AdminRMIimplements rmi) {
-        System.out.println("Esolha uma opção:\n1.Registar Pessoas\n2.Gerir Departamentos\n3.Criar Eleição\n4.Gerir Listas Candidatas\n5.Gerir Mesas de Votos\n6.Alterar propriedades de uma eleição\n7.Ver estado das mesas\n8.Analisar eleições passadas");
+        System.out.println("Esolha uma opção:\n1.Registar Pessoas\n2.Gerir Departamentos\n3.Criar Eleição\n4.Gerir Listas Candidatas\n5.Gerir Mesas de Votos\n6.Alterar propriedades de uma eleição\n7.Ver estado das mesas\n8.Analisar eleições passadas\n9.Local de voto de um eleitor\n10.Consular eleicoes(tempo real)");
         Scanner sc = new Scanner(System.in);
         String opcao;
         opcao = sc.nextLine();
         int opcaoint;
-        try{
-            rmi.start();
-        }catch(Exception e){
-            System.out.println(e.getMessage());
-        }
         do {
             try {
+                System.out.print("->");
                 opcaoint = Integer.parseInt(opcao);
             } catch (NumberFormatException e) {
                 opcaoint = 0;
             }
-        } while (opcaoint <= 0 && opcaoint > 8);
+        } while (opcaoint <= 0 && opcaoint > 10);
         try {
             switch (opcaoint) {
                 case 1:
@@ -794,6 +818,9 @@ public class ConsolaAdmin implements Serializable{
                     EscolheEleiçãoPassada(rmi);
                     break;
                 case 9:
+                    localVotoEleitor(rmi);
+                    break;
+                case 10:
                     consultarEleicoesTempoReal(rmi);
                     break;
                 default:
