@@ -11,7 +11,7 @@ import java.util.*;
 
 import static TCP.TCPServer.reconectarRMI;
 import static java.lang.System.exit;
-import static java.lang.System.setOut;
+import static java.lang.Thread.currentThread;
 
 public class TCPServer implements Serializable{
     private static final long serialVersionUID = 1L;
@@ -45,64 +45,79 @@ public class TCPServer implements Serializable{
         return estadoMesa;
     }
 
-    static void reconectarRMI(TCPserverRMIimplements rmi){
+    static TCPserverRMIimplements reconectarRMI()   {
+        TCPserverRMIimplements rmi;
         int sleep = 1000;
-        Boolean flag = false;
-        while(!flag){
+        while(true) {
             try {
-                flag = true;
-                Thread.sleep(sleep);
                 rmi = (TCPserverRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI");
-                System.out.println(rmi);
                 rmi.sayHello();
+                return rmi;
             } catch (NotBoundException | RemoteException | MalformedURLException ignored) {
-            } catch (InterruptedException e1) {
-                flag = false;
                 System.out.println("putinha");
-                sleep*=2;
-                if (sleep>16000) {
-                    System.out.println("\n\t*Avaria no RMI Server*");
-                    exit(0);
+                try {
+                    Thread.sleep(sleep);
+                    sleep *= 2;
+                    if (sleep > 16000) {
+                        System.out.println("\n\t*Avaria no RMI Server*");
+                        exit(0);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }
     }
-    static void reconectarteste(TCPserverRMIimplements rmi){
-        Boolean flag = false;
+
+    static TCPserverRMIimplements reconectarteste(){
+        TCPserverRMIimplements rmi;
         try {
-            rmi.wait(30000);
-            System.out.println("tou aqui");
-            while (!flag) {
-                System.out.println("merda merda");
-                try {
-                    rmi = (TCPserverRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI");
-                    flag = true;
-                    rmi.notify();
-                } catch (NotBoundException | RemoteException | MalformedURLException ignored) {
-                    flag = false;
-                }
-            }
+            Thread.sleep(30000);
+            try {
+                rmi = (TCPserverRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI");
+                currentThread().interrupt();
+                return rmi;
+            } catch (NotBoundException | RemoteException | MalformedURLException ignored) {}
+
         }catch (InterruptedException e) {
             System.out.println("merda");
+            exit(0);
         }
+        return null;
     }
 
 
     public static void main(String args[]){
         int numero=0;
         try{
+            ServerSocket listenSocket;
             TCPserverRMIimplements rmi = (TCPserverRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI"); // ligar ao rmi
             Departamento dep;
+            Scanner scanner = new Scanner(System.in);
+            if(args.length == 2)
+                listenSocket = new ServerSocket(Integer.parseInt(args[0]),50,InetAddress.getByName(args[1]));
+            else {
 
-            if ((dep = rmi.abrirMesaVoto("dei"/*args[1]*/))==null){ //abrir mesa de voto retorna departamento da mesa
+                System.out.print("PORT: ");
+                int port = scanner.nextInt();
+                System.out.print("IP: ");
+                String ip = scanner.next();
+                listenSocket = new ServerSocket(port, 50,InetAddress.getByName(ip));
+            }
+            System.out.print("Departamento: ");
+            String nomeDep = scanner.next();
+            try{
+                dep = rmi.abrirMesaVoto(nomeDep);
+            }catch (RemoteException re){
+                rmi = reconectarRMI();
+                dep = rmi.abrirMesaVoto(nomeDep);
+            }
+            if (dep==null){ //abrir mesa de voto retorna departamento da mesa
                 System.out.println("\t*Erro*\nNao mesa inexistente ou fechada");
+                listenSocket.close();
                 exit(0);
             }
-            int serverPort = 6000;//Integer.parseInt(args[0]); // recerber o port
-            System.out.println("A Escuta no Porto "+serverPort);
-            ServerSocket listenSocket = new ServerSocket(serverPort);
             System.out.println("LISTEN SOCKET="+listenSocket);
-            Scanner scanner = new Scanner(System.in);
             while (true) {
                 System.out.println("[1]Inserir elietor para votar\n[0]Fechar mesa de voto");
                 System.out.print("->");
@@ -113,11 +128,8 @@ public class TCPServer implements Serializable{
                         try{
                             rmi.fecharMesaVoto(dep.getNome());
                         }catch (RemoteException re){
-                            System.out.println("merda");
-                            reconectarRMI(rmi);
-                            try {
-                                rmi.fecharMesaVoto(dep.getNome());
-                            }catch (Exception ignored){}
+                            rmi = reconectarRMI();
+                            rmi.fecharMesaVoto(dep.getNome());
                         }
                         System.out.println("\n\t*Mesa de Voto fechada*\n");
                         exit(0);
@@ -130,8 +142,8 @@ public class TCPServer implements Serializable{
                         String read = scanner.next();
                         try{
                             eleitor = rmi.identificarEleitor(read); // ver se o eleitor existe, se sim, retorna a pessoa
-                        }catch (Exception e){ // fail over
-                            reconectarRMI(rmi);
+                        }catch (RemoteException e){ // fail over
+                            rmi = reconectarRMI();
                             eleitor = rmi.identificarEleitor(read);
                         }
                         if (eleitor == null) { // eleitor nao identificado
@@ -141,8 +153,8 @@ public class TCPServer implements Serializable{
                             ArrayList<Eleicao> eleicoes = new ArrayList<>();
                             try{
                                 eleicoes = rmi.identificarEleicoes(eleitor, dep); // eleicoes disponiveis para o leitor votar
-                            }catch (Exception e){ // fail over
-                                reconectarRMI(rmi);
+                            }catch (RemoteException e){ // fail over
+                                rmi = reconectarRMI();
                                 eleicoes = rmi.identificarEleicoes(eleitor, dep);
                             }
                             if (!eleicoes.isEmpty()) {
@@ -154,8 +166,8 @@ public class TCPServer implements Serializable{
                                 int eleicaoid = -1;
                                 try{
                                     eleicaoid = rmi.escolherEleicao(eleitor, dep, opcao);
-                                }catch (Exception e){ // fail over
-                                    reconectarRMI(rmi);
+                                }catch (RemoteException e){ // fail over
+                                    rmi = reconectarRMI();
                                     eleicaoid = rmi.escolherEleicao(eleitor, dep, opcao);
                                 }
                                 if (eleicaoid != -1) { // eleicao identificada pelo o eleitor
@@ -241,6 +253,7 @@ class Connection extends Thread {
                     "\t'type|auth;uc|*numero da uc*;password|*password*'");
 
             //----- TYPE/AUTH autenticar eleitor -----
+            clientSocket.setSoTimeout(120000);
             if((verifica = verifica(this.in))!=null && verifica.get(0).equals("TYPE") && verifica.get(1).equals("AUTH") &&
                     verifica.get(2).equals("UC") && verifica.get(4).equals("PASSWORD") && verifica.size()==6){
 
@@ -252,8 +265,8 @@ class Connection extends Thread {
                 int i = 0;
                 try{
                     this.votosLista = rmi.getListaCandidatas(this.eleicaoID, this.eleitor); // listas candidatas
-                }catch (Exception e){ // fail over
-                    reconectarRMI(rmi);
+                }catch (RemoteException e){ // fail over
+                    rmi = reconectarRMI();
                     this.votosLista = rmi.getListaCandidatas(this.eleicaoID, this.eleitor);
                 }
 
@@ -265,12 +278,18 @@ class Connection extends Thread {
                 this.out.writeUTF(booletim.toString());
 
                 //----- TYPE/VOTE voto do eleitor -----
+                clientSocket.setSoTimeout(120000);
                 if ((verifica = verifica(this.in))!=null && verifica.get(0).equals("TYPE") &&
                         verifica.get(1).equals("VOTE") && verifica.get(2).equals("OPTION") && verifica.size()==4) {
                     i = Integer.parseInt(verifica.get(3))-1;
 
                     Voto voto = new Voto(this.eleitor, this.votosLista.get(i), this.departamento);
-                    rmi.votacaoEleitor(this.eleicaoID, voto);
+                    try{
+                        rmi.votacaoEleitor(this.eleicaoID, voto);
+                    }catch (RemoteException e){ // fail over
+                        rmi = reconectarRMI();
+                        rmi.votacaoEleitor(this.eleicaoID, voto);
+                    }
                     this.out.writeUTF("TYPE|VOTE;VOTE|CONFIRMED");
                 }else
                     this.out.writeUTF("TYPE|VOTE;OPTION|UNACKNOWLEDGED");
