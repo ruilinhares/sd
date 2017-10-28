@@ -7,45 +7,95 @@ import java.util.Date;
 import java.util.Scanner;
 import java.text.*;
 
+/**
+ *Classe derivada da classe ELeicao, representa uma eleição para um núcleo de estudantes de um departamento.
+ */
 public class Nucleo extends Eleicao implements Serializable {
+    /**
+     *Atributo que representa o departamento onde decorre a eleição.
+     */
     private Departamento departamento;
+    /**
+     *Atributo que representa a lista de eleitores desta eleição.
+     */
     private ArrayList<Pessoa> listaEleitores;
+    /**
+     *Atributo que representa a lista de votos dos eleitores.
+     */
     private ArrayList<Voto> listaVotos;
+    /**
+     *Atributo que representa a lista de listas candidatas da eleição.
+     */
     private ArrayList<ListaCandidata> listaCandidatos;
 
+    /**
+     *Construtor da classe.
+     * @param titulo Titulo da eleicao
+     * @param descricao Descricao da eleicao
+     * @param inicio Data e hora do inicio da eleicao
+     * @param fim Data e hora do fim da eleicao
+     * @param departamento Departamento onde decorre a eleicao
+     * @param listaCandidatos Lista de candidatos da eleição
+     */
     public Nucleo(String titulo, String descricao, Calendar inicio, Calendar fim, Departamento departamento, ArrayList<ListaCandidata> listaCandidatos) {
         super(titulo, descricao, inicio, fim);
         this.departamento = departamento;
         this.listaCandidatos = listaCandidatos;
         this.listaVotos = new ArrayList<>();
-        this.listaEleitores = new ArrayList<>();
-        this.listaEleitores.addAll(departamento.getListaEstudantes());
-        System.out.println(listaEleitores.size());
+        this.listaEleitores = new ArrayList<>(departamento.getListaEstudantes());
         this.listaCandidatos.add(new ListaCandidata("Voto Nulo"));
         this.listaCandidatos.add(new ListaCandidata("Voto em Branco"));
     }
 
 
+    /**
+     *Metodo que permite remover um eleitor da lista após este votar
+     *@param voto voto do eleitor
+     */
     @Override
     public void removeEleitor(Voto voto) {
-        this.listaEleitores.remove(voto.getEleitor());
+        for (Pessoa p : listaEleitores)
+            if (p.getNumeroCC().equals(voto.getEleitor().getNumeroCC())) {
+                this.listaEleitores.remove(p);
+                return;
+            }
     }
 
+    /**
+     * Metodo que permiteadicionar um voto a lista de votos
+     * @param voto
+     */
     @Override
     public void addVoto(Voto voto) {
         this.listaVotos.add(voto);
+        for (Pessoa p:listaEleitores)
+            if (voto.getEleitor().getNumeroCC().equals(p.getNumeroCC())){
+                listaEleitores.remove(p);
+            }
     }
 
+    /**
+     * Metodo que permite obter a lista de eleitores desta eleicao
+     * @return Lista de eleitores desta eleicao
+     */
     @Override
     public ArrayList<Pessoa> getListaEleitores(){
-        return this.listaEleitores;
+        return listaEleitores;
     }
 
+
+    /**
+     * Metodo que permite obter a lista de candidatos da eleicao.
+     * @return lista de candidatos da eleicao
+     */
     @Override
     public ArrayList<ListaCandidata> getListaCandidatos(Pessoa pessoa) {
         return listaCandidatos;
     }
 
+    /**
+     * Metodo que permite obter editar e gerir os candidatos a esta eleicao
+     */
     @Override
     public void EditaCandidatos(){
         System.out.print("[1]Adicionar Lista\n[2]Remover Lista");
@@ -80,6 +130,9 @@ public class Nucleo extends Eleicao implements Serializable {
         }
     }
 
+    /**
+     * Metodo que permite imprimir os dados desta eleicao
+     */
     @Override
     public void Print() {
         System.out.println(Titulo);
@@ -100,11 +153,18 @@ public class Nucleo extends Eleicao implements Serializable {
         }
     }
 
+    /**
+     * Metodo que permite saber o numero de votos de uma eleicao
+     */
     @Override
     public void numeroVotosAtual() {
         System.out.println("Numero de votos(em tempo real): "+ this.listaVotos.size());
     }
 
+    /**
+     * Metodo que permite saber em que local é que um eleitor votou.
+     * @param uc numero da uc do eleitor em questão.
+     */
     @Override
     public void localVoto(String uc) {
         System.out.println(this.getTitulo());
@@ -116,6 +176,10 @@ public class Nucleo extends Eleicao implements Serializable {
             }
     }
 
+    /**
+     * Metodo tostring
+     * @return string com dados da eleicao
+     */
     @Override
     public String toString() {
         return "Nucleo{" +

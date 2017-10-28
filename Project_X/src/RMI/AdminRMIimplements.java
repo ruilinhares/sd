@@ -21,8 +21,6 @@ public interface AdminRMIimplements extends Remote {
 
     void criarEleicao(Eleicao eleicao) throws java.rmi.RemoteException;
 
-    void teste() throws RemoteException;
-
     void AddEleicao(Eleicao eleicao) throws java.rmi.RemoteException;
 
     void AddMesa(TCPServer mesa) throws java.rmi.RemoteException;
@@ -30,12 +28,6 @@ public interface AdminRMIimplements extends Remote {
     void sayHello() throws java.rmi.RemoteException;
 
     void RemoveDepartamento(int i) throws java.rmi.RemoteException;
-
-    void AddDepartamento(Departamento dep) throws java.rmi.RemoteException;
-
-    void Store() throws java.rmi.RemoteException;
-
-    void start() throws java.rmi.RemoteException;
 
     void RemoveEleicao(int i) throws java.rmi.RemoteException;
 

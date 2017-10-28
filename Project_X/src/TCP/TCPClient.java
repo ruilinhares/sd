@@ -45,7 +45,13 @@ public class TCPClient {
 				out.writeUTF(texto);
 				// READ FROM SOCKET
 				data = in.readUTF();
-				if (data.equals("EXIT")){
+				if (data.equals("EXIT") ||
+						data.equals("TYPE|VOTE;VOTE|CONFIRMED") ||
+						data.equals("TYPE|VOTE;OPTION|UNACKNOWLEDGED") ||
+						data.equals("TYPE|AUTH;CREDENTIALS|NOT MATCH") ||
+						data.equals("TYPE|AUTH;CREDENTIALS|NOT MATCH") ||
+						data.equals("TYPE|TIME;RESPONSE TIME|TIMEOUT")){
+					System.out.println("Resposta da Mesa de Voto: " + data);
 					out.close();
 					socket.close();
 					exit(0);

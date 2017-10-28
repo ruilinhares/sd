@@ -15,11 +15,11 @@ public interface TCPserverRMIimplements extends Remote {
 
     ArrayList<Eleicao> identificarEleicoes(Pessoa eleitor, Departamento dep) throws java.rmi.RemoteException;
 
-    int escolherEleicao(Pessoa eleitor, Departamento dep, int i) throws java.rmi.RemoteException;
+    Eleicao escolherEleicao(Pessoa eleitor, Departamento dep, int i) throws java.rmi.RemoteException;
 
-    ArrayList<ListaCandidata> getListaCandidatas(int eleicaohashcode, Pessoa eleitor) throws java.rmi.RemoteException;
+    ArrayList<ListaCandidata> getListaCandidatas(Eleicao eleicao, Pessoa eleitor) throws java.rmi.RemoteException;
 
-    void votacaoEleitor(int eleicaohashcode, Voto voto) throws java.rmi.RemoteException;
+    void votacaoEleitor(Eleicao eleicao, Voto voto) throws java.rmi.RemoteException;
 
     void sayHello() throws java.rmi.RemoteException;
 }

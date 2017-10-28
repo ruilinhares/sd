@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * Classe que representa uma eleição da direção geral
+ */
 public class DirecaoGeral extends Eleicao implements Serializable{
     private ArrayList<Voto> listaVotosEstudantes;
     private ArrayList<Voto> listaVotosDocentes;
@@ -15,9 +18,23 @@ public class DirecaoGeral extends Eleicao implements Serializable{
     private ArrayList<Docente> listaDocentes;
     private ArrayList<Funcionario> listaFuncionarios;
 
+    /**
+     * Construtor vazio da classe
+     */
     public DirecaoGeral() {
     }
 
+    /**
+     *Construtor da classe.
+     * @param titulo Titulo da eleicao
+     * @param descricao Descricao da eleicao
+     * @param inicio Data e hora do inicio da eleicao
+     * @param fim Data e hora do fim da eleicao
+     * @param listaCandidatosDocentes Listas candidatas de docentes
+     * @param listaCandidatosEstudantes Listas candidatas de docentes
+     * @param listaCandidatosFuncionarios Listas candidatas de funcionários
+     * @param listaEleitores Lista de eleitores da eleição
+     */
     public DirecaoGeral(String titulo, String descricao, Calendar inicio, Calendar fim, ArrayList<ListaCandidata> listaCandidatosEstudantes, ArrayList<ListaCandidata> listaCandidatosDocentes, ArrayList<ListaCandidata> listaCandidatosFuncionarios, ArrayList<Pessoa> listaEleitores) {
         super(titulo, descricao, inicio, fim);
         this.listaCandidatosEstudantes = listaCandidatosEstudantes;
@@ -39,76 +56,124 @@ public class DirecaoGeral extends Eleicao implements Serializable{
         this.listaCandidatosFuncionarios.add(new ListaCandidata("Voto em Branco"));
     }
 
+    /**
+     *Metodo que permite remover um eleitor da lista após este votar
+     *@param voto voto do eleitor
+     */
     @Override
     public void removeEleitor(Voto voto) {
         voto.getEleitor().removerEleitorGeral(this, voto);
     }
 
+    /**
+     * Metodo que permite adicionar um voto a lista de votos
+     * @param voto
+     */
     @Override
     public void addVoto(Voto voto) {
         voto.getEleitor().addVotoGeral(this,voto);
     }
 
+    /**
+     * Método que permite adicionaar um voto
+     * @param voto Voto do eleitor
+     */
     void addVotoEstudante(Voto voto) {
         this.listaVotosEstudantes.add(voto);
     }
 
+    /**
+     * Método que permite adicionar um voto de um docente
+     * @param voto Voto do docente
+     */
     void addVotoDocente(Voto voto) {
         this.listaVotosDocentes.add(voto);
     }
 
+    /**
+     * Método que permite adicionar o voto de um funcionário
+     * @param voto Voto de um funcionário
+     */
     void addVotoFuncionario(Voto voto) {
         this.listaVotosFuncionarios.add(voto);
     }
 
+    /**
+     * Método que permite remover um eleitor após este votar.
+     * @param voto Voto do eleitor
+     */
     void removeEleitorEstudante(Voto voto) {
-        for (Pessoa p : listaEstudantes)
-            if (p.getNumeroCC().equals(voto.getEleitor().getNumeroCC())) {
-                this.listaEstudantes.remove(p);
-                break;
-            }
+        this.listaVotosEstudantes.add(voto);
     }
 
+    /**
+     * Método que permite remover um eleitor após este votar.
+     * @param voto Voto do eleitor
+     */
     void removeEleitorDocente(Voto voto) {
-        for (Pessoa p : listaDocentes)
-            if (p.getNumeroCC().equals(voto.getEleitor().getNumeroCC())) {
-                this.listaDocentes.remove(p);
-                break;
-            }
+        this.listaVotosDocentes.add(voto);
     }
 
+    /**
+     * Método que permite remover um eleitor após este votar.
+     * @param voto Voto do eleitor
+     */
     void removeEleitorFuncionario(Voto voto) {
-        for (Pessoa p : listaFuncionarios)
-            if (p.getNumeroCC().equals(voto.getEleitor().getNumeroCC())) {
-                this.listaFuncionarios.remove(p);
-                break;
-            }
+        this.listaVotosFuncionarios.add(voto);
     }
 
+    /**
+     * Método que permite adicionar um eleitor à lista de eleitores
+     * @param p Estudante a adicionar
+     */
     void AddEstudante(Estudante p){
         this.listaEstudantes.add(p);
     }
 
+    /**
+     * Método que permite adicionar um eleitor à lista de eleitores
+     * @param p Docente a adicionar
+     */
     void AddDocente(Docente p){
         this.listaDocentes.add(p);
     }
 
+    /**
+     * Método que permite adicionar um eleitor à lista de eleitores
+     * @param p Funcionário a adicionar
+     */
     void AddFuncionario(Funcionario p){
         this.listaFuncionarios.add(p);
     }
 
+    /**
+     * Método que permite obter a lista de candidatos estudantes
+     * @return lista de candidatos estudantes
+     */
     ArrayList<ListaCandidata> getListaCandidatosEstudantes() {
         return listaCandidatosEstudantes;
     }
 
+    /**
+     * Método que permite obter a lista de candidatos docentes
+     * @return lista de candidatos docentes
+     */
     ArrayList<ListaCandidata> getListaCandidatosDocentes() {
         return listaCandidatosDocentes;
     }
 
+    /**
+     * Método que permite obter a lista de candidatos funcionários
+     * @return lista de candidatos funcionários
+     */
     ArrayList<ListaCandidata> getListaCandidatosFuncionarios() {
         return listaCandidatosFuncionarios;
     }
 
+    /**
+     * Método que permite obter a lista de eleitores da eleição
+     * @return lista de eleitores da eleição
+     */
     @Override
     public ArrayList<Pessoa> getListaEleitores(){
         ArrayList<Pessoa> lista = new ArrayList<>();
@@ -118,11 +183,19 @@ public class DirecaoGeral extends Eleicao implements Serializable{
         return lista;
     }
 
+    /**
+     * Método que permite obter a lista de candidatos de uma eleição
+     * @param eleitor
+     * @return Lista de candidatos
+     */
     @Override
     public ArrayList<ListaCandidata> getListaCandidatos(Pessoa eleitor) {
         return eleitor.getListaCandidataGeral(this);
     }
 
+    /**
+     * Método que permite editar os candidatos funcionários de uma eleição
+     */
     private void EditaCandidatosFuncionarios(){
         System.out.print("[1]Adicionar Lista\n[2]Remover Lista");
         Scanner sc= new Scanner(System.in);
@@ -156,6 +229,9 @@ public class DirecaoGeral extends Eleicao implements Serializable{
         }
     }
 
+    /**
+     * Método que permite editar os candidatos estudantes de uma eleição
+     */
     private void EditaCandidatosEstudantes(){
         System.out.print("[1]Adicionar Lista\n[2]Remover Lista");
         Scanner sc= new Scanner(System.in);
@@ -189,6 +265,9 @@ public class DirecaoGeral extends Eleicao implements Serializable{
         }
     }
 
+    /**
+     * Método que permite editar os candidatos docentes de uma eleição
+     */
     private void EditaCandidatosDocentes(){
         System.out.print("[1]Adicionar Lista\n[2]Remover Lista");
         Scanner sc= new Scanner(System.in);
@@ -222,7 +301,9 @@ public class DirecaoGeral extends Eleicao implements Serializable{
         }
     }
 
-    @Override
+    /**
+     *
+     **/
     public void EditaCandidatos(){
         System.out.println("Listas Candidatas de : \n1 - Funiconários\n2 - Docentes\n3 - Estudantes");
         Scanner sc = new Scanner(System.in);
@@ -240,7 +321,6 @@ public class DirecaoGeral extends Eleicao implements Serializable{
         }
     }
 
-    @Override
     public void Print() {
         System.out.println(Titulo);
         System.out.println(Descricao);
@@ -280,6 +360,7 @@ public class DirecaoGeral extends Eleicao implements Serializable{
             System.out.println("Número de votos: "+conta);
         }
     }
+
 
     @Override
     public void numeroVotosAtual() {

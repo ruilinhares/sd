@@ -9,7 +9,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.*;
 import java.util.*;
-
 import static java.lang.System.exit;
 import static java.lang.System.setOut;
 
@@ -29,22 +28,8 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         this.listaDepartamentos = new ArrayList<>();
         this.listaPessoas = new ArrayList<>();
         this.mesasVotos = new ArrayList<>();
-
-        this.start();
-        Calendar c1 = Calendar.getInstance();
-        Calendar c2 = Calendar.getInstance();
-        c1.set(2016,8,25,11,0);
-        c2.set(2017,10,29,11,0);
-        ArrayList<ListaCandidata> l1 = new ArrayList<>();
-        l1.add(new ListaCandidata("Lista A"));
-
-        listaEleicoes.add(new DirecaoGeral("GERAL","dg",c1,c2,new ArrayList<>(l1),new ArrayList<>(l1),new ArrayList<>(l1),listaPessoas));
-        mesasVotos.add(new TCPServer(listaDepartamentos.get(0)));
-        mesasVotos.get(0).addEleicao(listaEleicoes.get(2));
-        for (Pessoa e : listaPessoas)
-            System.out.println(e.getNumeroCC());
+        //start();
     }
-
     synchronized public ArrayList<Eleicao> getListaEleicoes()  {
         return listaEleicoes;
     }
@@ -61,9 +46,10 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         return mesasVotos;
     }
 
-    public  void addDepartamento(Departamento dep){
+    synchronized public  void addDepartamento(Departamento dep){
         this.listaDepartamentos.add(dep);
     }
+
 
     synchronized public void sayHello() throws RemoteException {
         System.out.println("print do lado do servidor...!.");
@@ -84,12 +70,16 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
                 return aux;
         return null;
     }
+
     synchronized public void RemoveDepartamento(int i){
         this.listaDepartamentos.remove(i);
+        store();
     }
 
     synchronized public void AddDepartamento(Departamento dep){
         this.listaDepartamentos.add(dep);
+        store();
+
     }
     // Ponto 1 - REGISTAR PESSOA
     synchronized public Boolean registarPessoa (Pessoa pessoa) throws RemoteException{
@@ -102,63 +92,60 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         for (Departamento dep : listaDepartamentos)
             if ((pessoa.getDepartamento().getNome().toUpperCase()).equals(dep.getNome().toUpperCase())) {
                 pessoa.inserirPessoaNaLista(listaPessoas, dep);
+                store();
                 return true;
             }
+
         return false;
     }
 
-    // Ponto 2 - GERIR DEPARTAMENTOS E FALCULDADES
-    synchronized public void teste(){
-        ArrayList<Estudante> listaEstudantes = new ArrayList<>();
-        Departamento dep= new Departamento( "NEI", listaEstudantes );
-        this.listaDepartamentos.add(dep);
-    }
-
     // Ponto 3 - CRIAR ELEICOES
+    @Override
     synchronized public void criarEleicao(Eleicao eleicao) throws RemoteException{
         listaEleicoes.add(eleicao);
+        store();
     }
 
     @Override
     synchronized public void AddEleicao(Eleicao eleicao) throws RemoteException {
         this.listaEleicoes.add(eleicao);
+        store();
     }
 
+    @Override
     synchronized public void RemoveEleicao(int i){
         this.listaEleicoes.remove(i);
+        store();
     }
-
-    synchronized public void RemoveMesa(int i){
-        this.mesasVotos.remove(i);
-    }
-
-    // Ponto 4 - GERIR LISTAS DE CANDIDATOS A UMA ELEICAO
-
 
     // Ponto 5 - GERIR MESAS DE VOTOS
-
-    //Adicionar Mesa de Voto
-    //public void adicionarMesaVoto(Eleicao eleicao, MesaVoto mesa) throws RemoteException
-    //Remover Mesa de Voto
-    //public void removerMesaVoto(Eleicao eleicao, MesaVoto mesa) throws RemoteException
+    @Override
+    synchronized public void RemoveMesa(int i){
+        this.mesasVotos.remove(i);
+        store();
+    }
 
     //-----TCPserver-client-------------------------------------
 
     // ABRIR MESA DE VOTO
+    @Override
     synchronized public Departamento abrirMesaVoto(String dep){
         for (TCPServer aux : mesasVotos)
             if ((dep.toUpperCase()).equals(aux.getDepartamento().getNome().toUpperCase()) && !aux.getEstadoMesa()) {
                 aux.setEstadoMesa(true);
+                store();
                 return aux.getDepartamento();
             }
         return null;
     }
 
     // ABRIR MESA DE VOTO
+    @Override
     synchronized public void fecharMesaVoto(String dep){
         for (TCPServer aux : mesasVotos)
             if (dep.equals(aux.getDepartamento().getNome()) && aux.getEstadoMesa()) {
                 aux.setEstadoMesa(false);
+                store();
                 return;
             }
     }
@@ -180,19 +167,24 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         for (TCPServer mesaux : this.mesasVotos)
             if ((mesaux.getDepartamento().getNome().toUpperCase()).equals(dep.getNome().toUpperCase()))
                 for (Eleicao aux: mesaux.getListaEleicoes())
-                    if (aux.verificaVotacao())
-                        for (Pessoa pessoa: aux.getListaEleitores())
-                            if (pessoa.getNumeroCC().equals(eleitor.getNumeroCC()))
-                                eleicoes.add(aux);
+                    for (Eleicao ele : listaEleicoes)
+                        if (ele.eleicaoEquals(aux))
+                            if (ele.verificaVotacao())
+                                for (Pessoa pessoa: ele.getListaEleitores())
+                                    if (pessoa.getNumeroCC().equals(eleitor.getNumeroCC()))
+                                        eleicoes.add(ele);
         return eleicoes;
     }
 
     //adiciona uma mesa criada a lista de mesas de voto
+    @Override
     synchronized public void AddMesa(TCPServer mesa){
         mesasVotos.add(mesa);
+        store();
     }
 
-    synchronized public int escolherEleicao(Pessoa eleitor, Departamento dep, int i){
+    @Override
+    synchronized public Eleicao escolherEleicao(Pessoa eleitor, Departamento dep, int i){
         int count = 0;
         for (TCPServer mesaux : this.mesasVotos)
             if (mesaux.getDepartamento().getNome().equals(dep.getNome()))
@@ -200,46 +192,49 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
                     if (aux.verificaVotacao())
                         for (Pessoa pessoa: aux.getListaEleitores())
                             if (pessoa.getNumeroCC().equals(eleitor.getNumeroCC()) && (++count)==i)
-                                return aux.hashCode();
-        return -1;
+                                return aux;
+        return null;
     }
-    // Ponto 7 AUTENTICAR ELEITOR
 
     // devolver a lista de Candidatos correspondente ao eleitor
     @Override
-    synchronized public ArrayList<ListaCandidata> getListaCandidatas(int eleicaohashcode, Pessoa eleitor) throws RemoteException{
+    synchronized public ArrayList<ListaCandidata> getListaCandidatas(Eleicao eleicao, Pessoa eleitor) throws RemoteException{
         for (Pessoa pessoa: this.listaPessoas)
             if (pessoa.getNumeroCC().equals(eleitor.getNumeroCC()))
                 for (Eleicao auxEleicao : this.listaEleicoes)
-                    if (eleicaohashcode==auxEleicao.hashCode())
+                    if (auxEleicao.eleicaoEquals(eleicao))
                         return auxEleicao.getListaCandidatos(pessoa);
 
         return null;
     }
+
     // Ponto 8 (VALIDAR O VOTO DO ELEITOR)
     @Override
-    synchronized public void votacaoEleitor(int eleicaohashcode, Voto voto) throws RemoteException {
+    synchronized public void votacaoEleitor(Eleicao eleicao, Voto voto) throws RemoteException {
         for (Pessoa pessoa: this.listaPessoas)
             if (pessoa.getNumeroCC().equals(voto.getEleitor().getNumeroCC()))
-                for (Eleicao auxEleicao : this.listaEleicoes) {
-                    if (eleicaohashcode == auxEleicao.hashCode()) {
-                        auxEleicao.removeEleitor(voto);
-                        auxEleicao.addVoto(voto);
-                    }
-        }
+            for (Eleicao auxEleicao : this.listaEleicoes)
+                if (auxEleicao.eleicaoEquals(eleicao)) {
+                    auxEleicao.removeEleitor(voto);
+                    auxEleicao.addVoto(voto);
+
+                }
+    store();
     }
 
-    //---UDP----------------------------------------------------
+//---UDP----------------------------------------------------
 
     private void udpServerON(){
-        new Thread(new UDPServer()).start();
-    }
+            new Thread(new UDPServer()).start();
+            }
 
-    //---Base-Dados-----
+//---Base-Dados---------------------------------------------
+
     public void start() {
         ObjectInputStream objectinputstream1 = null;
         ObjectInputStream objectinputstream2 = null;
         ObjectInputStream objectinputstream3 = null;
+        ObjectInputStream objectinputstream4 = null;
         try {
 
             FileInputStream streamIn = new FileInputStream("pessoas.ser");
@@ -254,15 +249,20 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
             objectinputstream1 = new ObjectInputStream(streamIn);
             ArrayList<Eleicao> elections = (ArrayList<Eleicao>) objectinputstream1.readObject();
             this.listaEleicoes=elections;
+            streamIn = new FileInputStream("mesas.ser");
+            objectinputstream4 = new ObjectInputStream(streamIn);
+            ArrayList<TCPServer> mesas = (ArrayList<TCPServer>) objectinputstream4.readObject();
+            this.mesasVotos= mesas;
 
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (objectinputstream1 != null && objectinputstream2 != null && objectinputstream3 != null) {
+            if (objectinputstream1 != null && objectinputstream2 != null && objectinputstream3 != null && objectinputstream4 == null) {
                 try {
                     objectinputstream1.close();
                     objectinputstream2.close();
                     objectinputstream3.close();
+                    objectinputstream4.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -270,9 +270,9 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
         }
     }
 
-    public void Store(){
-        ObjectOutputStream oos1=null,oos2=null,oos3=null;
-        FileOutputStream fout1,fout2,fout3;
+    private void store(){
+        ObjectOutputStream oos1=null,oos2=null,oos3=null,oos4=null;
+        FileOutputStream fout1,fout2,fout3,fout4;
         try{
             fout1 = new FileOutputStream("pessoas.ser");
             oos1 = new ObjectOutputStream(fout1);
@@ -283,31 +283,33 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
             fout3 = new FileOutputStream("eleicoes.ser");
             oos3 = new ObjectOutputStream(fout3);
             oos3.writeObject(listaEleicoes);
+            fout4 = new FileOutputStream("mesas.ser");
+            oos4 = new ObjectOutputStream(fout4);
+            oos4.writeObject(mesasVotos);
         }catch (IOException e) {
             System.out.println("IOEXCEPTION");
         }finally {
-            if(oos1  != null && oos2!=null && oos3!=null){
+            if(oos1  != null && oos2!=null && oos3!=null && oos4!=null){
                 try {
-                    oos1.close();
-                    oos2.close();
-                    oos3.close();
+                oos1.close();
+                oos2.close();
+                oos3.close();
+                oos4.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                e.printStackTrace();
                 }
             }
         }
     }
 
-    //---UDP----------------------------------------------------
-
-
-    // =========================================================
+// =========================================================
     public static void main(String args[]) throws RemoteException {
-
         RMIserver rmiServer = null;
         try {
             Registry rmiRegistry = LocateRegistry.createRegistry(6789);
             rmiServer = new RMIserver();
+            for (TCPServer m:rmiServer.mesasVotos)
+                m.setEstadoMesa(false);
             rmiRegistry.rebind("HelloRMI", rmiServer); // RMI primario iniciado
             rmiServer.udpServerON();
             System.out.println("RMI Primário Server ready.");
@@ -344,7 +346,7 @@ public class RMIserver extends UnicastRemoteObject implements AdminRMIimplements
                                 rmiServer.udpServerON();
                                 System.out.println("RMI Backup Server ready.");
                             } catch (RemoteException re2) {
-                                System.out.println(re2.getMessage());
+                            System.out.println(re2.getMessage());
                             }
                         }
                     } //while

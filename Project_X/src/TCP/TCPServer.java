@@ -11,7 +11,6 @@ import java.util.*;
 
 import static TCP.TCPServer.reconectarRMI;
 import static java.lang.System.exit;
-import static java.lang.Thread.currentThread;
 
 public class TCPServer implements Serializable{
     private static final long serialVersionUID = 1L;
@@ -69,24 +68,6 @@ public class TCPServer implements Serializable{
         }
     }
 
-    static TCPserverRMIimplements reconectarteste(){
-        TCPserverRMIimplements rmi;
-        try {
-            Thread.sleep(30000);
-            try {
-                rmi = (TCPserverRMIimplements) Naming.lookup("rmi://localhost:6789/HelloRMI");
-                currentThread().interrupt();
-                return rmi;
-            } catch (NotBoundException | RemoteException | MalformedURLException ignored) {}
-
-        }catch (InterruptedException e) {
-            System.out.println("merda");
-            exit(0);
-        }
-        return null;
-    }
-
-
     public static void main(String args[]){
         int numero=0;
         try{
@@ -138,7 +119,7 @@ public class TCPServer implements Serializable{
                     // identificar eleitor e eleicao
                     case "1":
                         System.out.print("Numero de CC do novo eleitor: ");
-                        Pessoa eleitor = null;
+                        Pessoa eleitor;
                         String read = scanner.next();
                         try{
                             eleitor = rmi.identificarEleitor(read); // ver se o eleitor existe, se sim, retorna a pessoa
@@ -150,7 +131,7 @@ public class TCPServer implements Serializable{
                             System.out.println("\n\t*Eleitor não identificado!*\n");
                         } else { // eleitor identificado
                             System.out.println("\t*Eleitor identificado!*\n\nLista de Eleicoes disponives para votar:");
-                            ArrayList<Eleicao> eleicoes = new ArrayList<>();
+                            ArrayList<Eleicao> eleicoes;
                             try{
                                 eleicoes = rmi.identificarEleicoes(eleitor, dep); // eleicoes disponiveis para o leitor votar
                             }catch (RemoteException e){ // fail over
@@ -163,18 +144,18 @@ public class TCPServer implements Serializable{
                                     System.out.println("[" + (++i) + "]" + aux.getTitulo());
                                 System.out.print("->");
                                 int opcao = scanner.nextInt();
-                                int eleicaoid = -1;
+                                Eleicao eleicao;
                                 try{
-                                    eleicaoid = rmi.escolherEleicao(eleitor, dep, opcao);
+                                    eleicao = rmi.escolherEleicao(eleitor, dep, opcao);
                                 }catch (RemoteException e){ // fail over
                                     rmi = reconectarRMI();
-                                    eleicaoid = rmi.escolherEleicao(eleitor, dep, opcao);
+                                    eleicao = rmi.escolherEleicao(eleitor, dep, opcao);
                                 }
-                                if (eleicaoid != -1) { // eleicao identificada pelo o eleitor
+                                if (eleicao != null) { // eleicao identificada pelo o eleitor
                                     Socket clientSocket = listenSocket.accept(); // BLOQUEANTE
                                     System.out.println("CLIENT_SOCKET (created at accept())=" + clientSocket);
                                     numero++;
-                                    new Connection(clientSocket, rmi, eleicaoid, dep, eleitor);
+                                    new Connection(clientSocket, rmi, eleicao, dep, eleitor);
                                     System.out.println("CLIENT ["+numero+"]");
                                 } else // eleicao nao identificada
                                     System.out.println("\n\t*Opcao invalida*\n");
@@ -199,14 +180,14 @@ class Connection extends Thread {
     private DataInputStream in;
     private DataOutputStream out;
     private Socket clientSocket;
-    private int eleicaoID; //identificador de eleicao (hashcode)
+    private Eleicao eleicao; //identificador de eleicao
     private Departamento departamento; //local da eleicao
     private Pessoa eleitor; //eleitor
     private ArrayList<ListaCandidata> votosLista; //lista dos candidatos
     private TCPserverRMIimplements rmi;
 
-    Connection(Socket aClientSocket, TCPserverRMIimplements rmi, int eleicao, Departamento departamento, Pessoa eleitor) {
-        this.eleicaoID = eleicao;
+    Connection(Socket aClientSocket, TCPserverRMIimplements rmi, Eleicao eleicao, Departamento departamento, Pessoa eleitor) {
+        this.eleicao = eleicao;
         this.departamento = departamento;
         this.rmi = rmi;
         this.eleitor = eleitor;
@@ -246,7 +227,7 @@ class Connection extends Thread {
     }
 
     public void run(){
-        try{
+        try {
             ArrayList<String> verifica;
             // TYPE/UNLOCK identificar eleitor com o nº CC
             this.out.writeUTF("\tPasso 1: Autenticar com o seu numero da UC e a sua password (preencher nos '*')" +
@@ -254,20 +235,20 @@ class Connection extends Thread {
 
             //----- TYPE/AUTH autenticar eleitor -----
             clientSocket.setSoTimeout(120000);
-            if((verifica = verifica(this.in))!=null && verifica.get(0).equals("TYPE") && verifica.get(1).equals("AUTH") &&
-                    verifica.get(2).equals("UC") && verifica.get(4).equals("PASSWORD") && verifica.size()==6){
+            if ((verifica = verifica(this.in)) != null && verifica.get(0).equals("TYPE") && verifica.get(1).equals("AUTH") &&
+                    verifica.get(2).equals("UC") && verifica.get(4).equals("PASSWORD") && verifica.size() == 6) {
 
-                if (!(this.eleitor.getPassword().equals(verifica.get(5)))){
+                if (!(this.eleitor.getPassword().toUpperCase().equals(verifica.get(5)))) {
                     this.out.writeUTF("TYPE|AUTH;CREDENTIALS|NOT MATCH");
                     closeSocket();
                 }
                 StringBuilder booletim = new StringBuilder("");
                 int i = 0;
-                try{
-                    this.votosLista = rmi.getListaCandidatas(this.eleicaoID, this.eleitor); // listas candidatas
-                }catch (RemoteException e){ // fail over
+                try {
+                    this.votosLista = rmi.getListaCandidatas(this.eleicao, this.eleitor); // listas candidatas
+                } catch (RemoteException e) { // fail over
                     rmi = reconectarRMI();
-                    this.votosLista = rmi.getListaCandidatas(this.eleicaoID, this.eleitor);
+                    this.votosLista = rmi.getListaCandidatas(this.eleicao, this.eleitor);
                 }
 
                 booletim.append("\tPasso 3: Votar numa das listas do boletim (preencher nos '*')" + "\t'type|vote;option|*numero da lista*'\nTYPE|BULLETIN");
@@ -279,26 +260,33 @@ class Connection extends Thread {
 
                 //----- TYPE/VOTE voto do eleitor -----
                 clientSocket.setSoTimeout(120000);
-                if ((verifica = verifica(this.in))!=null && verifica.get(0).equals("TYPE") &&
-                        verifica.get(1).equals("VOTE") && verifica.get(2).equals("OPTION") && verifica.size()==4) {
-                    i = Integer.parseInt(verifica.get(3))-1;
+                if ((verifica = verifica(this.in)) != null && verifica.get(0).equals("TYPE") &&
+                        verifica.get(1).equals("VOTE") && verifica.get(2).equals("OPTION") && verifica.size() == 4) {
+                    i = Integer.parseInt(verifica.get(3)) - 1;
 
                     Voto voto = new Voto(this.eleitor, this.votosLista.get(i), this.departamento);
-                    try{
-                        rmi.votacaoEleitor(this.eleicaoID, voto);
-                    }catch (RemoteException e){ // fail over
+                    try {
+                        rmi.votacaoEleitor(this.eleicao, voto);
+                    } catch (RemoteException e) { // fail over
                         rmi = reconectarRMI();
-                        rmi.votacaoEleitor(this.eleicaoID, voto);
+                        rmi.votacaoEleitor(this.eleicao, voto);
                     }
                     this.out.writeUTF("TYPE|VOTE;VOTE|CONFIRMED");
-                }else
+                } else
                     this.out.writeUTF("TYPE|VOTE;OPTION|UNACKNOWLEDGED");
-            }else
+            } else
                 this.out.writeUTF("TYPE|AUTH;CREDENTIALS|NOT MATCH");
+            try{
+                this.out.writeUTF("EXIT");
+            }catch (Exception ignored){}
             closeSocket();
+        }catch (SocketTimeoutException ig){
+            try {
+                this.out.writeUTF("TYPE|TIME;RESPONSE TIME|TIMEOUT");
+                closeSocket();
+            } catch (IOException ignored) {}
         }catch(EOFException e){System.out.println("EOF:" + e);
         }catch(IOException e){System.out.println();
         }catch (Exception e){System.out.println(e.getMessage());}
     }
 }
-
